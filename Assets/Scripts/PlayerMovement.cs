@@ -1,159 +1,216 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UnityEngine.PlayerLoop;
 
+
+[RequireComponent(typeof(CharacterController))]
+[DefaultExecutionOrder(-100)]
 public class PlayerMovement : MonoBehaviour
 {
-    public bool IsGrounded {get; private set;}
-    public bool IsMoving {get; private set;}
-    public float Speed {get; private set;}
-    public Vector3 Velocity {get; private set;}
-    
-    [Header("References")]
-    public Camera firstPersonCam;
-    public Camera scopedInCam;
-    public Camera thirdPersonCam;
-    public CharacterController characterController;
+    #region Serialized
+    [Header("Controls")] [SerializeField] float defaultMoveSpeed = 5f;
+    [SerializeField] bool hideCursor;
 
-    [Header("Ground Check")]
-    public Transform groundCheck;
-    public LayerMask groundLayer;
+    [Header("Ground Check")] [SerializeField] Transform groundCheck;
+    [SerializeField] LayerMask groundLayer;
     [SerializeField] float groundDistance = 0.4f;
-    
-    [Header("Common Tunables")]
-    [SerializeField] float mouseSensitivity = 100f;
-    [SerializeField] float walkSpeed = 7f;
-    [SerializeField] float runSpeed = 12f;
-    [SerializeField] float jumpHight = 2f;
-    [SerializeField] int maxJumpsInAir = 1;
-    [SerializeField] float gravityModifier = 2f;
-    [SerializeField] int perspective = 3;
+    #endregion
 
-    [Header("First Person Tunables")]
-    [SerializeField] float maxVerticalAngle = 80f;
+    #region Private
+    private CharacterController buildInController;
+    private Vector3 framePosDelta;
+    private Vector3 frameRotDelta;
+    private bool isRotating;
+    #endregion
 
-    [Header("Third Person Tunables")]
-    [SerializeField] float turnSmoothTime = 0.1f;
-    
-    [HideInInspector] public int FirstPersonPerspective = 1;
-    [HideInInspector] public int ScopedInPerspective = 2;
-    [HideInInspector] public int ThirdPersonPerspective = 3;
+    #region Abilities Parameters
+    private Dictionary<string, HashSet<Ability>> eventListeners;
+    private Ability[] allAbilities;
+    private List<Ability> activeAbilities;
+    private float MoveSpeed;
+    #endregion
 
-    float xRotation = 0f;
-    Vector3 velocity;
-    bool isGrounded = false;
-    int jumpedInAir = 0;
-    float turnSmoothVelocity;
+    #region Exposed Variables
+    public bool IsMoving { get; private set; }
+    public float Speed { get; private set; }
+    public Vector3 Velocity { get; private set; }
+    public bool IsGrounded { get; private set; }
+    #endregion
 
-    private void Start()
+    #region Unity Callbacks
+    void Awake()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        gravityModifier *= Physics.gravity.y;
-        changePerspecive(perspective);
+        allAbilities = GetComponentsInChildren<Ability>();
+        activeAbilities = new List<Ability>();
+        MoveSpeed = float.MinValue;
+
+        foreach (Ability ability in allAbilities)
+        {
+            ability.SelfInit(this);
+            if (ability.enabled) activeAbilities.Add(ability);
+        }
+        UpdateMovementSpeed();
+    }
+
+    void Start()
+    {
+        buildInController = GetComponent<CharacterController>();
+        if (hideCursor)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+    
+    void FixedUpdate()
+    {
+        IsGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundLayer);
     }
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Tab)) 
-        { 
-            if (perspective == FirstPersonPerspective) { changePerspecive(ThirdPersonPerspective); }
-            else if (perspective == ThirdPersonPerspective) { changePerspecive(FirstPersonPerspective); }
-        }
-        if (perspective == FirstPersonPerspective || perspective == ScopedInPerspective) { firstPersonMovement(); }
-        else if (perspective == ThirdPersonPerspective) { thirdPersonMovement(); }
-        handleJump();
-    }
-
-    private void firstPersonMovement()
-    {
-        // movement
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
-        Vector3 move = transform.right * x + transform.forward * z;
-        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+        foreach (Ability ability in allAbilities)
         {
-            characterController.Move(move * runSpeed * Time.deltaTime);
-        } 
-        else
-        {
-            characterController.Move(move * walkSpeed * Time.deltaTime);
-        }
-
-        // rotation
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -maxVerticalAngle, maxVerticalAngle);
-
-        firstPersonCam.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        scopedInCam.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        transform.Rotate(Vector3.up * mouseX);
-    }
-
-    private void thirdPersonMovement()
-    {
-        float horiz = Input.GetAxis("Horizontal");
-        float vert = Input.GetAxis("Vertical");
-        Vector3 direction = new Vector3(horiz, 0, vert).normalized;
-        if (direction.magnitude >= 0.1f)
-        {
-            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + thirdPersonCam.transform.eulerAngles.y;
-            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
-            transform.rotation = Quaternion.Euler(0f, angle, 0f);
-            
-            float moveSpeed;
-            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) { moveSpeed = runSpeed; }
-            else { moveSpeed = walkSpeed; }
-            
-            direction = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-            characterController.Move(direction.normalized * moveSpeed * Time.deltaTime);
-        }
-    }
-
-    private void handleJump()
-    {
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundLayer);
-        if (isGrounded)
-        {
-            if (velocity.y < 0) { velocity.y = -2f; }
-            jumpedInAir = 0;
-            
-            if (maxJumpsInAir == 0 && Input.GetButtonDown("Jump"))
+            if (ability.enabled)
             {
-                velocity.y = Mathf.Sqrt(jumpHight * -2 * gravityModifier);
-                jumpedInAir++;
+                if (ability.endType == AbilityEndType.KeyUp && Input.GetKeyUp(ability.endKeyCode)) SetAbilityActiveInner(ability, false);
+            }
+            else
+            {
+                if (ability.startType == AbilityStartType.KeyDown && Input.GetKeyDown(ability.startKeyCode)) SetAbilityActiveInner(ability, true);
             }
         }
-        
-        if (maxJumpsInAir > 0 && Input.GetButtonDown("Jump") && jumpedInAir < maxJumpsInAir)
-        {
-            velocity.y = Mathf.Sqrt(jumpHight * -2 * gravityModifier);
-            jumpedInAir++;
-        }
-
-        velocity.y += gravityModifier * Time.deltaTime;
-        characterController.Move(velocity * Time.deltaTime);
     }
-
-    public void changePerspecive(int newPerspective)
+    
+    void LateUpdate()
     {
-        perspective = newPerspective;
-        if (newPerspective == FirstPersonPerspective)
+        if (IsMoving)
         {
-            firstPersonCam.gameObject.SetActive(true);
-            scopedInCam.gameObject.SetActive(false);
-            thirdPersonCam.gameObject.SetActive(false);
-        } else if (newPerspective == ScopedInPerspective)
-        {
-            firstPersonCam.gameObject.SetActive(false);
-            scopedInCam.gameObject.SetActive(true);
-            thirdPersonCam.gameObject.SetActive(false);
-        } else
-        {
-            firstPersonCam.gameObject.SetActive(false);
-            scopedInCam.gameObject.SetActive(false);
-            thirdPersonCam.gameObject.SetActive(true);
+            buildInController.Move(framePosDelta);
+            Velocity = framePosDelta / Time.deltaTime;
+            Speed = Velocity.magnitude;
         }
+
+        if (isRotating)
+        {
+            transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + frameRotDelta);
+            isRotating = false;
+            frameRotDelta = Vector3.zero;
+        }
+        
+        // Move with inputs
+        Vector3 move = transform.right * Input.GetAxis("Horizontal") + transform.forward * Input.GetAxis("Vertical");
+        framePosDelta = move * MoveSpeed * Time.deltaTime;
+        IsMoving = move.sqrMagnitude > 0.02f;
+    }
+    #endregion
+    
+    #region Methods
+    void SetAbilityActiveInner(Ability ability, bool value)
+    {
+        if (value) this.activeAbilities.Add(ability);
+        else this.activeAbilities.Remove(ability);
+        ability.enabled = value;
+        UpdateMovementSpeed();
     }
 
-    public int GetPerspective() { return perspective; }
+    void UpdateMovementSpeed()
+    {
+        MoveSpeed = float.MinValue;
+        foreach (Ability ability in activeAbilities)
+        {
+            if (ability.speedType == SpeedType.AtLeast) MoveSpeed = Mathf.Max(MoveSpeed, ability.movementSpeed);
+            else MoveSpeed = Mathf.Min(MoveSpeed, ability.movementSpeed);
+        }
+        if (MoveSpeed <= 0) MoveSpeed = defaultMoveSpeed;
+    }
 
+    public void InstantMoveBy(Vector3 distance)
+    {
+        framePosDelta += distance;
+        IsMoving = true;
+    }
+
+    public void InstantRotateBy(Vector3 angle)
+    {
+        frameRotDelta += angle;
+        isRotating = true;
+    }
+
+    public void InstantMoveByX(float distance)
+    {
+        framePosDelta.x += distance;
+        IsMoving = true;
+    }
+    
+    public void InstantMoveByY(float distance)
+    {
+        framePosDelta.y += distance;
+        IsMoving = true;
+    }
+    
+    public void InstantMoveByZ(float distance)
+    {
+        framePosDelta.z += distance;
+        IsMoving = true;
+    }
+
+    public void InstantRotateByX(float angle)
+    {
+        frameRotDelta.x += angle;
+        isRotating = true;
+    }
+
+    public void InstantRotateByY(float angle)
+    {
+        frameRotDelta.y += angle;
+        isRotating = true;
+    }
+    
+    public void InstantRotateByZ(float angle)
+    {
+        frameRotDelta.z += angle;
+        isRotating = true;
+    }
+    
+    public bool TryEnableAbility(Ability ability, bool force)
+    {
+        if (!this.allAbilities.Contains(ability)) return false;
+
+        if (force)
+        {
+            SetAbilityActiveInner(ability, true);
+            return true;
+        }
+
+        foreach (Ability activeAbility in activeAbilities)
+        {
+            if (activeAbility.ShouldBlockAbilityStart(ability)) return false;
+        }
+
+        SetAbilityActiveInner(ability, true);
+        return true;
+    }
+
+    public bool TryDisableAbility(Ability ability, bool force)
+    {
+        if (!this.allAbilities.Contains(ability) || !this.activeAbilities.Contains(ability)) return false;
+
+        if (force)
+        {
+            SetAbilityActiveInner(ability, false);
+            return true;
+        }
+
+        foreach (Ability activeAbility in activeAbilities)
+        {
+            if (activeAbility.ShouldBlockAbilityEnd(ability)) return false;
+        }
+
+        SetAbilityActiveInner(ability, false);
+        return true;
+    }
+    #endregion
 }

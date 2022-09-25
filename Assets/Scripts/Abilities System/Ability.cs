@@ -1,34 +1,41 @@
-using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 
 public class Ability : MonoBehaviour
 {
-    [SerializeField] private AbilityStartType startType;
-    [SerializeField] private int abilityIndex;
-    /*internal List<string> eventsList;*/
+    [SerializeField] internal int abilityIndex;
+    [SerializeField] internal AbilityStartType startType;
+    [SerializeField, DrawIfEnumEqual("startType", 2)] internal KeyCode startKeyCode;
+    [SerializeField] internal AbilityEndType endType;
+    [SerializeField, DrawIfEnumEqual("endType", 1)] internal KeyCode endKeyCode;
+    [SerializeField] internal SpeedType speedType = SpeedType.Ignored;
+    [SerializeField, DrawIfEnumEqual("speedType", 0, DrawIfEnumEqualAttribute.ComparisonType.NotEqual)] internal float movementSpeed;
 
     internal new bool enabled
     {
         get => base.enabled;
         set => base.enabled = value;
     }
-    protected bool IsGrounded => handler.Controller.IsGrounded;
-    protected bool IsMoving => handler.Controller.IsMoving;
-    protected float Speed => handler.Controller.Speed;
-    protected Vector3 Velocity => handler.Controller.Velocity;
-    public bool IsActive => enabled;
+
+    protected bool IsGrounded => Controller.IsGrounded;
+    protected bool IsMoving => Controller.IsMoving;
+    protected float Speed => Controller.Speed;
+    protected Vector3 Velocity => Controller.Velocity;
+    public bool IsEnabled => enabled;
     public int AbilityIndex => abilityIndex;
-    public AbilitiesHandler handler { get; private set; }
-    public PlayerMovement Controller => handler.Controller;
+    public PlayerMovement Controller { get; private set; }
     
-    
-    internal void SelfInit(AbilitiesHandler abilitiesHandler)
+
+    private void Awake()
     {
-        handler = abilitiesHandler;
-        this.enabled = (startType == AbilityStartType.Automatic);
+        
     }
     
+    internal void SelfInit(PlayerMovement abilitiesHandler)
+    {
+        Controller = abilitiesHandler;
+        this.enabled = (startType == AbilityStartType.Automatic);
+    }
+
     public virtual bool ShouldBlockAbilityStart(Ability ability)
     {
         return false;
@@ -39,30 +46,6 @@ public class Ability : MonoBehaviour
         return false;
     }
 
-    public bool Activate(bool force) => this.handler.ActivateAbility(this, force);
-    public bool Deactivate(bool force) => this.handler.DeactivateAbility(this, force);
-    
-    
-    /*internal void SelfUpdateEventInfo()
-{
-    if (eventsList == null)
-    {
-        eventsList = new List<string>();
-    }
-    else
-    {
-        this.handler.UnbindAbilityEvents(this);
-        this.eventsList.Clear();
-    }
-
-    foreach (MethodInfo methodinf in this.GetAllMethods())
-    {
-        if (this.handler.HasEvent(methodinf.Name) && methodinf.GetParameters().Length == 0)
-        {
-            eventsList.Add(methodinf.Name);
-        }
-    }
-    this.handler.BindAbilityEvents(this);
-}*/
-
+    public bool TryEnable(bool force) => this.Controller.TryEnableAbility(this, force);
+    public bool TryDisable(bool force) => this.Controller.TryDisableAbility(this, force);
 }

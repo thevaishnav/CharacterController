@@ -1,5 +1,6 @@
 ﻿public enum AbilityStartType
 {
     Automatic,
-    Manual
+    Manual,
+    KeyDown
 }
