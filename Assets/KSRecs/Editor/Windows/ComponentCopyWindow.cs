@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using KSRecs.Editor.Extensions;
-using KSRecs.UnityObjectExtensions;
+using KSRecs.Extensions;
 using Component = UnityEngine.Component;
 
 namespace KSRecs.Editor
@@ -139,7 +139,7 @@ namespace KSRecs.Editor
                     string cName = component.ClassName();
                     if (_components.ContainsKey(cName) && _components[cName])
                     {
-                        info.AppendLine($"        {component.CopyTo(target, copyNonSerialized)}");
+                        info.AppendLine($"        {component.CopyComponentTo(target, copyNonSerialized)}");
                     }
                 }
                 EditorUtility.SetDirty(target);

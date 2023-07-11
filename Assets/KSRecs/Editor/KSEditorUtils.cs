@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using KSRecs.Editor.Extensions;
-using KSRecs.UnityObjectExtensions;
-using KSRecs.Utils;
+using KSRecs.Extensions;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -11,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace KSRecs.Editor
 {
-    public class KSEditorUtils
+    public static class KSEditorUtils
     {
         private static void FindMissingScriptsInGo(GameObject g, bool searchChildren, out int goCount, out int componentsCount, out int missingCount)
         {
@@ -115,7 +114,7 @@ namespace KSRecs.Editor
 
             EditorUtility.SetDirty(target);
         }
-        
+
         public static void RemoveDuplicateComponents(GameObject target)
         {
             Action<Object> DestAct = DestroyAction;

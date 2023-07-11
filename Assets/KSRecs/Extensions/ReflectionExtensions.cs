@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using KSRecs.Utils;
 
-namespace KSRecs.ReflectionExtensions
+namespace KSRecs.Extensions
 {
     public static class ReflectionExtensions
     {

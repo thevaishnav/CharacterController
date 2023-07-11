@@ -1,0 +1,16 @@
+{
+    "name": "KS.CCN",
+    "rootNamespace": "",
+    "references": [
+        "GUID:69d7b16853327d2438be510f1e0d9476"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

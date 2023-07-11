@@ -1,25 +1,18 @@
 using UnityEngine;
 using UnityEditor;
-using System.Collections.Generic;
-using System;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using KSRecs.Editor.Extensions;
-using KSRecs.UnityObjectExtensions;
-using Component = UnityEngine.Component;
+
 
 namespace KSRecs.Editor
 {
     public class EditTransformWindow : EditorWindow
     {
         private GameObject[] selection;
-        private bool position = false;
-        private bool rotation = false;
-        private bool scale = false;
-        private Vector3 positionOffset;
-        private Vector3 rotationOffset;
-        private Vector3 scaleOffset;
+        private bool _editPosition = false;
+        private bool _editRot = false;
+        private bool _editScale = false;
+        private Vector3 _positionOffset;
+        private Vector3 _rotationOffset;
+        private Vector3 _scaleOffset;
 
         public static void Init()
         {
@@ -46,16 +39,16 @@ namespace KSRecs.Editor
 
         private void OnGUI()
         {
-            position = EditorGUILayout.ToggleLeft("Position", position);
-            rotation = EditorGUILayout.ToggleLeft("Rotation", rotation);
-            scale = EditorGUILayout.ToggleLeft("Scale", scale);
+            _editPosition = EditorGUILayout.ToggleLeft("Position", _editPosition);
+            _editRot = EditorGUILayout.ToggleLeft("Rotation", _editRot);
+            _editScale = EditorGUILayout.ToggleLeft("Scale", _editScale);
 
-            GUI.enabled = position;
-            positionOffset = EditorGUILayout.Vector3Field("Position", positionOffset);
-            GUI.enabled = rotation;
-            rotationOffset = EditorGUILayout.Vector3Field("Rotation", rotationOffset);
-            GUI.enabled = scale;
-            scaleOffset = EditorGUILayout.Vector3Field("Scale", scaleOffset);
+            GUI.enabled = _editPosition;
+            _positionOffset = EditorGUILayout.Vector3Field("Position", _positionOffset);
+            GUI.enabled = _editRot;
+            _rotationOffset = EditorGUILayout.Vector3Field("Rotation", _rotationOffset);
+            GUI.enabled = _editScale;
+            _scaleOffset = EditorGUILayout.Vector3Field("Scale", _scaleOffset);
             GUI.enabled = true;
 
             if (GUILayout.Button("Apply")) OffsetSelection();
@@ -66,9 +59,9 @@ namespace KSRecs.Editor
         {
             foreach (GameObject gameObject in selection)
             {
-                if (position) gameObject.transform.position += positionOffset;
-                if (rotation) gameObject.transform.Rotate(rotationOffset);
-                if (scale) gameObject.transform.localScale += scaleOffset;
+                if (_editPosition) gameObject.transform.position += _positionOffset;
+                if (_editRot) gameObject.transform.Rotate(_rotationOffset);
+                if (_editScale) gameObject.transform.localScale += _scaleOffset;
             }
 
             this.Close();

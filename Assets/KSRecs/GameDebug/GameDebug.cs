@@ -7,7 +7,7 @@ namespace DebugToScreen
     [DefaultExecutionOrder(-10)]
     public class GameDebug : MonoBehaviour, IComparer<IGameLog>
     {
-        private static GameDebug Instance;
+        public static GameDebug Instance { get; private set; }
         internal static readonly GUIStyle MessageStyle = new GUIStyle();
         internal static readonly GUIStyle ErrorStyle = new GUIStyle();
         internal static readonly GUIStyle WarningStyle = new GUIStyle();
@@ -28,7 +28,9 @@ namespace DebugToScreen
         [SerializeField, Range(0f, 1f)] private float xOffset = 0f;
         [SerializeField, Range(0f, 1f)] private float yOffset = 0f;
         [SerializeField] private float logOffset = 4f;
+        [SerializeField] private Color messageColor;
         private float lineOffset = 4f;
+        public bool acceptInput;
 
         public int FontSize
         {
@@ -94,10 +96,10 @@ namespace DebugToScreen
 
         private void Init()
         {
-            MessageStyle.normal.textColor = Color.white;
-            ObjectLogStyle.normal.textColor = Color.white;
+            MessageStyle.normal.textColor = messageColor;
+            ObjectLogStyle.normal.textColor = messageColor;
             ObjectLogTitleStyleActive.normal.textColor = new Color(0.1f, 0.8f, 0.1f, 1f);
-            ObjectLogTitleStyleInactive.normal.textColor = new Color(1, 1, 1, 0.5f);
+            ObjectLogTitleStyleInactive.normal.textColor = messageColor;
             ErrorStyle.normal.textColor = Color.red;
             WarningStyle.normal.textColor = Color.yellow;
 
@@ -235,11 +237,11 @@ namespace DebugToScreen
             return r;
         }
 
-        public static void StartMyInfo(object caller, string message, string title = "")
+        public static void StartMyInfo(object caller, string title = "", bool isExpanded = false)
         {
             ObjectLog r;
-            if (string.IsNullOrEmpty(title)) r = new ObjectLog(nameof(caller), message, caller);
-            else r = new ObjectLog(title, message, caller);
+            if (string.IsNullOrEmpty(title)) r = new ObjectLog(caller.GetType().Name, caller, isExpanded);
+            else r = new ObjectLog(title, caller, isExpanded);
             Instance.objectLogs.Add(caller, r);
         }
 
@@ -257,10 +259,29 @@ namespace DebugToScreen
             else Debug.LogError($"Cannot find Field with name {fieldName}");
         }
 
-        public static void UpdateMyInfo(object caller, string message) => Instance.objectLogs[caller].Text = message;
-        public static void AddToMyInfo(object caller, string message) => Instance.objectLogs[caller].AddText(message);
-        public static void AddLineToMyInfo(object caller, string message) => Instance.objectLogs[caller].AddText($"\n{message}");
-        public static void ClearMyInfo(object caller) => Instance.objectLogs[caller].Text = "";
+        public static void UpdateMyInfo(object caller, string message)
+        {
+            if (Instance.acceptInput)
+                Instance.objectLogs[caller].Text = message;
+        }
+
+        public static void AddToMyInfo(object caller, string message)
+        {
+            if (Instance.acceptInput)
+                Instance.objectLogs[caller].AddText(message);
+        }
+
+        public static void AddLineToMyInfo(object caller, string message)
+        {
+            if (Instance.acceptInput)
+                Instance.objectLogs[caller].AddText($"\n{message}");
+        }
+
+        public static void ClearMyInfo(object caller)
+        {
+            if (Instance.acceptInput)
+                Instance.objectLogs[caller].Text = "";
+        }
 
         void OnGUI()
         {

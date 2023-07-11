@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Reflection;
-using KSRecs.EnumerableExtensions;
+using KSRecs.Extensions;
 using KSRecs.Utils;
 using UnityEngine;
 using UnityEngine.Events;

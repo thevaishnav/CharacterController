@@ -1,7 +1,7 @@
 using System;
 using KSRecs.Utils;
 
-namespace KSRecs.DateTimeExtensions
+namespace KSRecs.Extensions
 {
     public static class DateTimeExtensions
     {

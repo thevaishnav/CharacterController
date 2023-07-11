@@ -13,7 +13,7 @@ namespace DebugToScreen
             endTime = Time.time + duration;
         }
 
-        public override void DrawSelf(Rect rect)
+        public void DrawSelf(Rect rect)
         {
             if (Time.time > endTime)
             {

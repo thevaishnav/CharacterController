@@ -1,6 +1,6 @@
 ﻿using KSRecs.Utils;
 
-namespace Assets.KSRecs.StringExtensions
+namespace Assets.KSRecs.Extensions
 {
     public static class StringExtensions
     {

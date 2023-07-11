@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using KSRecs.Editor.Extensions;
-using KSRecs.UnityObjectExtensions;
+using KSRecs.Extensions;
 using UnityEditor;
 using UnityEngine;
 

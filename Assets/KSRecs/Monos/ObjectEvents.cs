@@ -33,7 +33,7 @@ public class ObjectEvents : MonoBehaviour
     {
         onDestroy.Invoke();
     }
-
+    
     private void OnCollisionEnter(Collision collision)
     {
         collisionEnter.Invoke();

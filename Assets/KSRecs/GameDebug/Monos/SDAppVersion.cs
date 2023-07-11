@@ -1,4 +1,3 @@
-using DebugToScreen;
 using UnityEngine;
 
 namespace DebugToScreen

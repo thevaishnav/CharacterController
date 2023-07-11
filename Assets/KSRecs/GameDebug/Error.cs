@@ -22,6 +22,6 @@ namespace DebugToScreen
         public float LinesCount => linesCount;
 
         public Error(string text) => this.Text = text;
-        public virtual void DrawSelf(Rect rect) => GUI.Label(rect, text, GameDebug.ErrorStyle);
+        public void DrawSelf(Rect rect) => GUI.Label(rect, text, GameDebug.ErrorStyle);
     }
 }

@@ -23,9 +23,13 @@ namespace KSRecs.Monos
         private Func<KeyCode, bool> checkFunc;
         private void Start()
         {
-            if (checkMode == CheckMode.KeyDown) checkFunc = Input.GetKeyDown;
-            else if (checkMode == CheckMode.KeyHold) checkFunc = Input.GetKey;
-            if (checkMode == CheckMode.KeyUp) checkFunc = Input.GetKeyUp;
+            checkFunc = checkMode switch
+            {
+                CheckMode.KeyDown => Input.GetKeyDown,
+                CheckMode.KeyHold => Input.GetKey,
+                CheckMode.KeyUp => Input.GetKeyUp,
+                _ => checkFunc
+            };
         }
 
         void Update()
@@ -33,16 +37,17 @@ namespace KSRecs.Monos
             if (checkFunc.Invoke(keycode))
             {
                 onPress?.Invoke();
+                if (TryGetComponent(out IKeyEventListener listener))
+                {
+                    listener.OnKeyEvent(keycode, checkMode);
+                }                
             }
         }
     }
 
 
-    public abstract class KeyEventListener : MonoBehaviour
+    public interface IKeyEventListener
     {
-        public virtual void OnKeyEvent() { }
-        public virtual void OnKeyEvent(KeyCode code) { }
-        public virtual void OnKeyEvent(KeyCode code, OnKeyEvent.CheckMode checkMode) { }
-        public virtual void OnKeyEvent(OnKeyEvent.CheckMode checkMode) { }
+        public void OnKeyEvent(KeyCode code, OnKeyEvent.CheckMode checkMode);
     }
 }

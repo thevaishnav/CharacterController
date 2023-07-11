@@ -1,5 +1,4 @@
 using System;
-using DebugToScreen;
 using UnityEngine;
 
 namespace DebugToScreen

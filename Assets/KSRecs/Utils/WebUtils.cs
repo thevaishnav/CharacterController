@@ -14,27 +14,27 @@ namespace KSRecs.Utils
 
         public static void DownloadAsset<T>(string url, string assetName, Action<T> success, Action<UnityWebRequest.Result> error) where T : Object
         {
-            WebUtilsObject go = new GameObject("DownloadingAssets").AddComponent<WebUtilsObject>();
+            UtilsObject go = new GameObject("DownloadingAssets").AddComponent<UtilsObject>();
             go.DownloadAssetBundleFromURL(url, (AssetBundle bundle) => OnAssetDownloaded<T>(bundle, assetName, success, error), error);
         }
 
         public static void DownloadAssetBundle(string url, Action<AssetBundle> success, Action<UnityWebRequest.Result> error)
         {
-            WebUtilsObject go = new GameObject("DownloadingAssets").AddComponent<WebUtilsObject>();
+            UtilsObject go = new GameObject("DownloadingAssets").AddComponent<UtilsObject>();
             go.DownloadAssetBundleFromURL(url, success, error);
         }
 
         public static void DownloadImage(string url, System.Action<Sprite> success, Action<UnityWebRequest.Result> error)
         {
             GameObject obj = new GameObject();
-            WebUtilsObject downloadImageHandler = obj.AddComponent<WebUtilsObject>();
+            UtilsObject downloadImageHandler = obj.AddComponent<UtilsObject>();
             downloadImageHandler.DownloadImage(url, success, error);
         }
         
         public static void DownloadTexture(string url, System.Action<Texture> success, Action<UnityWebRequest.Result> error)
         {
             GameObject obj = new GameObject();
-            WebUtilsObject downloadImageHandler = obj.AddComponent<WebUtilsObject>();
+            UtilsObject downloadImageHandler = obj.AddComponent<UtilsObject>();
             downloadImageHandler.DownloadTexture(url, success, error);
         }
         

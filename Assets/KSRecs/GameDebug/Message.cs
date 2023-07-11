@@ -26,7 +26,7 @@ namespace DebugToScreen
             this.Text = text;
         }
 
-        public virtual void DrawSelf(Rect rect)
+        public void DrawSelf(Rect rect)
         {
             GUI.Label(rect, text, GameDebug.MessageStyle);
         }

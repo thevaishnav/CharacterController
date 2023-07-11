@@ -247,6 +247,15 @@ namespace KSRecs.Utils
         
         
         
+        public static IEnumerable<Type> FindSubClassesOf<TBaseType>()
+        {   
+            Type baseType = typeof(TBaseType);
+            Assembly assembly = baseType.Assembly;
+            
+            return assembly.GetTypes().Where(type => !type.IsAbstract && !type.IsInterface && type != baseType && baseType.IsAssignableFrom(type));
+        }
+        
+        
         public static object GetFieldValue(object obj, string fieldName,
             BindingFlags bindings = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public |
                                     BindingFlags.NonPublic)

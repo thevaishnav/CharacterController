@@ -40,16 +40,16 @@ namespace DebugToScreen
         private bool getProps;
         private bool getText;
         
-        public ObjectLog(string title, string text, object theTarget)
+        public ObjectLog(string title, object theTarget, bool isExpanded)
         {
-            IsExpanded = true;
+            IsExpanded = isExpanded;
             getConts = false;
             getProps = false;
             getText = false;
             
             
             this.Title = title;
-            this.Text = text;
+            this.Text = "";
             this.theTarget = theTarget;
             fields = new List<FieldInfo>();
             properties = new List<PropertyInfo>();
