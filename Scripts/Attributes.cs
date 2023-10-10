@@ -1,78 +1,94 @@
 using System;
 using UnityEngine;
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class DefaultAbilityIndex : Attribute
+namespace KS.CharaCon.Attributes
 {
-    public int index;
-
-    public DefaultAbilityIndex(int index)
+    /// <summary> <see cref="Ability.AbilityIndex"/> of this ability when it is created in the inspector </summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    public class DefaultAbilityIndex : Attribute
     {
-        this.index = index;
-    }
-}
-
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class DefaultAbilityStartType : Attribute
-{
-    public AbilityStartType startType;
-    public KeyCode startKeyCode;
-
-    /// <param name="isAutomatic">Set it to True if you want default start type to be automatic, false if you want start type to be manual</param>
-    public DefaultAbilityStartType(bool isAutomatic)
-    {
-        if (isAutomatic)
+        public int Index;
+        /// <summary> Set <see cref="Ability.AbilityIndex"/> index of this ability when it is created in the inspector </summary>
+        /// <param name="value"> Value of ability index </param>
+        public DefaultAbilityIndex(int value)
         {
-            startType = AbilityStartType.Automatic;
-        }
-        else
-        {
-            startType = AbilityStartType.Manual;
+            this.Index = value;
         }
     }
 
-    /// <param name="keyCode">Pass the keycode you want the ability to start with</param>
-    public DefaultAbilityStartType(KeyCode keyCode)
+    /// <summary> <see cref="Ability.startType"/> of this ability when it is created in the inspector </summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    public class DefaultAbilityStartType : Attribute
     {
-        startType = AbilityStartType.KeyDown;
-        startKeyCode = keyCode;
-    }
-}
+        public AbilityStartType StartType;
+        public KeyCode StartKeyCode;
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class DefaultAbilityEndType : Attribute
-{
-    public AbilityEndType endType;
-    public KeyCode endKeyCode;
-
-    /// <param name="isAutomatic">Set it to True if you want default start type to be automatic, false if you want start type to be manual</param>
-    public DefaultAbilityEndType(bool isAutomatic)
-    {
-        if (isAutomatic)
+        /// <summary>
+        /// Ability <see cref="Ability.startType"/> of this ability when it is created in the inspector.
+        /// Use this overload only for <see cref="AbilityStartType.Automatic"/> or <see cref="AbilityStartType.Manual"/> start type.
+        /// </summary>
+        /// <param name="isAutomatic"> true if you want default start type to be <see cref="AbilityStartType.Automatic"/>, false if you want start type to be <see cref="AbilityStartType.Manual"/></param>
+        public DefaultAbilityStartType(bool isAutomatic)
         {
-            endType = AbilityEndType.Automatic;
+            if (isAutomatic) StartType = AbilityStartType.Automatic;
+            else StartType = AbilityStartType.Manual;
         }
-        else
+
+
+        /// <summary>
+        /// Ability <see cref="Ability.startType"/> of this ability when it is created in the inspector.
+        /// Use this overload for start type <see cref="AbilityStartType.KeyDown"/>.
+        /// </summary>
+        /// <param name="keyCode"> Keycode of the key </param>
+        public DefaultAbilityStartType(KeyCode keyCode)
         {
-            endType = AbilityEndType.Manual;
+            StartType = AbilityStartType.KeyDown;
+            StartKeyCode = keyCode;
         }
     }
 
-    /// <param name="keyCode">Pass the keycode you want the ability to start with</param>
-    public DefaultAbilityEndType(KeyCode keyCode)
+    /// <summary> <see cref="Ability.endType"/> of this ability when it is created in the inspector </summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    public class DefaultAbilityEndType : Attribute
     {
-        endType = AbilityEndType.KeyUp;
-        endKeyCode = keyCode;
+        public AbilityEndType EndType;
+        public KeyCode EndKeyCode;
+        public float Duration;
+
+        /// <summary>
+        /// Ability <see cref="Ability.endType"/> of this ability when it is created in the inspector.
+        /// Use this overload only for <see cref="AbilityEndType.Automatic"/> or <see cref="AbilityEndType.Manual"/> end type.
+        /// </summary>
+        /// <param name="isAutomatic"> true if you want default start type to be <see cref="AbilityEndType.Automatic"/>, false if you want start type to be <see cref="AbilityEndType.Manual"/></param>
+        public DefaultAbilityEndType(bool isAutomatic)
+        {
+            if (isAutomatic) EndType = AbilityEndType.Automatic;
+            else EndType = AbilityEndType.Manual;
+        }
+
+        /// <summary>
+        /// Ability <see cref="Ability.endType"/> of this ability when it is created in the inspector.
+        /// Use this overload end type <see cref="AbilityEndType.KeyUp"/>.
+        /// </summary>
+        /// <param name="keyCode"> Keycode of the key </param>
+        public DefaultAbilityEndType(KeyCode keyCode)
+        {
+            EndType = AbilityEndType.KeyUp;
+            EndKeyCode = keyCode;
+        }
     }
-}
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class DefaultMoveSpeed : Attribute
-{
-    public float speed;
-
-    public DefaultMoveSpeed(float speed)
+    /// <summary> <see cref="Ability.TargetSpeed"/> of this ability when it is created in the inspector </summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    public class DefaultMoveSpeed : Attribute
     {
-        this.speed = speed;
+        public float Speed;
+
+        /// <summary> <see cref="Ability.TargetSpeed"/> of this ability when it is created in the inspector  </summary>
+        /// <param name="value"> move speed </param>
+        public DefaultMoveSpeed(float value)
+        {
+            this.Speed = value;
+        }
     }
 }

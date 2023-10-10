@@ -1,9 +1,15 @@
+using System;
+using KS.CharaCon.Attributes;
 using UnityEngine;
 
-[DefaultAbilityIndex(-1)]
-[DefaultAbilityStartType(KeyCode.C)]
-[DefaultAbilityEndType(KeyCode.C)]
-public class CrouchAbility : Ability
+namespace KS.CharaCon.Abilities
 {
-   
+    /// <summary> Crouch ability for the player </summary>
+    [Serializable]
+    [DefaultAbilityIndex(-1)]
+    [DefaultAbilityStartType(KeyCode.C)]
+    [DefaultAbilityEndType(KeyCode.C)]
+    public class CrouchAbility : Ability
+    {
+    }
 }
