@@ -12,7 +12,7 @@ using UnityEngine;
 public class PlayerMovementEditor : Editor
 {
     private PlayerMovement _playerMovement;
-
+    
     private void OnEnable()
     {
         _playerMovement = (PlayerMovement)target;
@@ -21,7 +21,7 @@ public class PlayerMovementEditor : Editor
     
     public override void OnInspectorGUI()
     {
-        base.DrawDefaultInspector();
+        DrawDefaultInspector();
 
         if (_playerMovement.__EditorModeRemoveEmptyAbility__())
         {

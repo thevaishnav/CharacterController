@@ -7,7 +7,7 @@ namespace KS.CharaCon.Attributes
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class DefaultAbilityIndex : Attribute
     {
-        public int Index;
+        public readonly int Index;
         /// <summary> Set <see cref="Ability.AbilityIndex"/> index of this ability when it is created in the inspector </summary>
         /// <param name="value"> Value of ability index </param>
         public DefaultAbilityIndex(int value)

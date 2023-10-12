@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -13,61 +14,63 @@ namespace KS.CharaCon
     {
         #region Events
         /// <summary> Event fired when the PlayerMovement script is enabled </summary>
-        internal event Action EvEnabled;
+        public event Action EvEnabled;
 
         /// <summary> Event fired when the PlayerMovement script is disabled </summary>
-        internal event Action EvDisabled;
+        public event Action EvDisabled;
 
         /// <summary> Event fired every Update </summary>
-        internal event Action EvUpdate;
+        public event Action EvUpdate;
 
         /// <summary> Event fired every FixedUpdate </summary>
-        internal event Action EvFixedUpdate;
+        public event Action EvFixedUpdate;
 
         /// <summary> Event fired every LateUpdate </summary>
-        internal event Action EvLateUpdate;
+        public event Action EvLateUpdate;
 
         /// <summary> Event fired every OnTriggerEntered </summary>
-        internal event Action<Collider> EvTriggerEntered;
+        public event Action<Collider> EvTriggerEntered;
 
         /// <summary> Event fired every OnTriggerStay </summary>
-        internal event Action<Collider> EvTriggerStay;
+        public event Action<Collider> EvTriggerStay;
 
         /// <summary> Event fired every OnTriggerExit </summary>
-        internal event Action<Collider> EvTriggerExit;
+        public event Action<Collider> EvTriggerExit;
 
         /// <summary> Event fired every OnCollisionEnter </summary>
-        internal event Action<Collision> EvCollisionEnter;
+        public event Action<Collision> EvCollisionEnter;
 
         /// <summary> Event fired every OnCollisionStay </summary>
-        internal event Action<Collision> EvCollisionStay;
+        public event Action<Collision> EvCollisionStay;
 
         /// <summary> Event fired every OnCollisionExit </summary>
-        internal event Action<Collision> EvCollisionExit;
+        public event Action<Collision> EvCollisionExit;
         #endregion
 
         #region Serialized Fields
-        [Header("Controls")] [SerializeField, Tooltip("Default Movement speed of the player, Note that if the enabled ability defines value for \"targetSpeed\" then that value will be used")]
+        [Header("References")] 
+        [SerializeField, Tooltip("Player Animator")]
+        private Animator animator;
+
+        [SerializeField, Tooltip("Player Camera")]
+        private Transform mCamera;
+
+        
+        [Header("Controls")] 
+        [SerializeField, Tooltip("Default Movement speed of the player, Note that if the enabled ability defines value for \"targetSpeed\" then that value will be used")]
         private float moveSpeed = 5f;
 
         [SerializeField, Tooltip("Turn time of the player, how fast the player is allowed to turn")]
         private float turnTime = 0.1f;
-
-        /// <summary> Mass used by physics system </summary>
-        [SerializeField, Tooltip("Mass of player")]
-        public float Mass = 100f;
 
         [SerializeField, Tooltip("Should the cursor be visible")]
         private bool hideCursor;
 
         [SerializeField, Tooltip("If true player will always look in the direction of camera")]
         private bool rotatePlayerWithCamera = true;
-
-        /// <summary> Gravity used by physics system </summary>
-        [SerializeField, Tooltip("Force of gravity applied on player every frame")]
-        public Vector3 Gravity = new Vector3(0f, -9.8f, 0f);
-
-        [Header("Ground Check")] [SerializeField, Tooltip("Physics layer for ground check")]
+        
+        [Header("Physics")]
+        [SerializeField, Tooltip("Physics layer for ground check")]
         private LayerMask groundLayer;
 
         [SerializeField, Tooltip("Ground distance form the center of player GameObject")]
@@ -75,13 +78,13 @@ namespace KS.CharaCon
 
         [SerializeField, Tooltip("Radius of an imaginary sphere, if the ground is inside this sphere then player is considered to be grounded")]
         private float checkRadius = 0.4f;
-
-        [Header("References")] [SerializeField, Tooltip("Player Animator")]
-        private Animator animator;
-
-        [SerializeField, Tooltip("Player Camera")]
-        private Transform mCamera;
-
+        
+        [SerializeField, Tooltip("Force of gravity applied on player every frame")]
+        public Vector3 gravity = new Vector3(0f, -9.8f, 0f);
+        
+        [SerializeField, Tooltip("Mass of player")]
+        public float mass = 100f;
+        
         [SerializeReference, Space(20f), Tooltip("Abilities this player has")]
         private Ability[] abilities;
         #endregion
@@ -194,6 +197,21 @@ namespace KS.CharaCon
         {
             EvFixedUpdate?.Invoke();
             _animatorHandler.IsGrounded = Physics.CheckSphere(GroundCheckPosition, checkRadius, groundLayer);
+            
+            if (_animatorHandler.IsGrounded && _velocity.y < 0) _velocity.y = -2f;
+
+            _velocity += _acceleration * Time.fixedDeltaTime;
+            _acceleration = gravity;
+
+            Vector3 pos = transform.position;
+            _buildInController.Move(_velocity * Time.fixedDeltaTime);
+            _animatorHandler.Speed = (transform.position - pos).magnitude / Time.fixedDeltaTime;
+
+            if (_frameRotDelta.sqrMagnitude > 0.01f)
+            {
+                transform.Rotate(_frameRotDelta);
+                _frameRotDelta = Vector3.zero;
+            }
         }
 
         private void Update()
@@ -205,21 +223,6 @@ namespace KS.CharaCon
         private void LateUpdate()
         {
             EvLateUpdate?.Invoke();
-
-            if (_animatorHandler.IsGrounded && _velocity.y < 0) _velocity.y = -2f;
-
-            _velocity += _acceleration * Time.deltaTime;
-            _acceleration = Gravity;
-
-            Vector3 pos = transform.position;
-            _buildInController.Move(_velocity * Time.deltaTime);
-            _animatorHandler.Speed = (transform.position - pos).magnitude / Time.deltaTime;
-
-            if (_frameRotDelta.sqrMagnitude > 0.01f)
-            {
-                transform.Rotate(_frameRotDelta);
-                _frameRotDelta = Vector3.zero;
-            }
         }
 
         private void OnDrawGizmosSelected()
@@ -321,13 +324,13 @@ namespace KS.CharaCon
             switch (forceMode)
             {
                 case ForceMode.Force:
-                    _acceleration += value / Mass;
+                    _acceleration += value / mass;
                     break;
                 case ForceMode.Acceleration:
                     _acceleration += value;
                     break;
                 case ForceMode.Impulse:
-                    _acceleration += value / (Mass * Time.deltaTime); // divide by Time.deltaTime here so as to make this force FrameRate Independent (Remember will multiply it by Time.deltaTime to calculate Velocity)
+                    _velocity += value / mass;
                     break;
                 case ForceMode.VelocityChange:
                     _velocity += value;
@@ -335,7 +338,7 @@ namespace KS.CharaCon
             }
         }
 
-        /// <summary> Add a torque to player GameObject </summary>
+        /*/// <summary> Add a torque to player GameObject </summary>
         /// <param name="value"> Amount of torque to be added </param>
         /// <param name="forceMode"> Nature of torque to be added </param>
         public void AddTorque(Vector3 value, ForceMode forceMode = ForceMode.Force)
@@ -343,19 +346,19 @@ namespace KS.CharaCon
             switch (forceMode)
             {
                 case ForceMode.Force:
-                    _frameRotDelta += value / Mass;
+                    _frameRotDelta += value / mass;
                     break;
                 case ForceMode.Acceleration:
                     _frameRotDelta += value;
                     break;
                 case ForceMode.Impulse:
-                    _acceleration += value / (Mass * Time.deltaTime); // divide by Time.deltaTime here so as to make this force FrameRate Independent (Remember will multiply it by Time.deltaTime to calculate Velocity)
+                    _acceleration += value / (mass * Time.deltaTime); // divide by Time.deltaTime here so as to make this force FrameRate Independent (Remember will multiply it by Time.deltaTime to calculate Velocity)
                     break;
                 case ForceMode.VelocityChange:
                     _frameRotDelta += value;
                     break;
             }
-        }
+        }*/
 
         /// <summary> Try to enable an ability. </summary>
         /// <param name="ability"> Ability to be enabled </param>
@@ -446,9 +449,24 @@ namespace KS.CharaCon
             if (HasAbility(abilityType)) return false;
 
             Ability ability = (Ability)Activator.CreateInstance(abilityType);
-            ability.__EditorModeCreated__();
+            ability.Reset();
+
             ArrayUtility.Add(ref abilities, ability);
-            if (Application.isPlaying) ability.Init(this);
+            if (Application.isPlaying)
+            {
+                ability.Init(this);
+                BindingFlags flags = BindingFlags.Default | BindingFlags.Instance | BindingFlags.CreateInstance | BindingFlags.DeclaredOnly | BindingFlags.NonPublic;
+                if (enabled)
+                {
+                    ability.GetType().GetMethod("OnPlayerEnabled", flags)?.Invoke(ability,null);
+                    ability.GetType().GetMethod("OnAbilityEnabled", flags)?.Invoke(ability,null);
+                }
+                else
+                {
+                    ability.GetType().GetMethod("OnPlayerDisabled", flags)?.Invoke(ability,null);
+                    ability.GetType().GetMethod("OnAbilityDisabled", flags)?.Invoke(ability,null);
+                }
+            }
             return true;
         }
 

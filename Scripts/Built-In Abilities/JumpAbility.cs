@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using KS.CharaCon.Attributes;
 using UnityEngine;
 
@@ -10,18 +9,28 @@ namespace KS.CharaCon.Abilities
     [DefaultAbilityIndex(-2)]
     [DefaultAbilityStartType(KeyCode.Space)]
     [DefaultAbilityEndType(KeyCode.Space)]
-    public class JumpAbility : KS.CharaCon.Ability
+    public class JumpAbility : Ability
     {
-        [SerializeField] private float jumpForce = 10f;
-        
-        protected override async void OnAbilityEnabled()
+        [SerializeField, Tooltip("Force (Impulse) applied to the player the moment player starts jump")]
+        private Vector3 jumpForce = new Vector3(0f, 10f, 0f);
+
+        [SerializeField, Tooltip("Force applied to player every frame while player holds jump button.")]
+        private Vector3 persistantForce = new Vector3(0f, 0.1f, 0f);
+
+        protected override void OnAbilityEnabled()
         {
-            if (Controller.IsGrounded)
-            {
-                Controller.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
-            }
-            await Task.Delay(100); // Delay so that animator can sync the Ability Index
-            TryDisable(true);
+            if (Controller.IsGrounded) Controller.AddForce(jumpForce, ForceMode.Impulse);
+            Controller.EvFixedUpdate += AbilityUpdate;
+        }
+
+        protected override void OnAbilityDisabled()
+        {
+            Controller.EvFixedUpdate -= AbilityUpdate;
+        }
+
+        protected void AbilityUpdate()
+        {
+            Controller.AddForce(persistantForce * Time.deltaTime, ForceMode.Acceleration);
         }
     }
 }
