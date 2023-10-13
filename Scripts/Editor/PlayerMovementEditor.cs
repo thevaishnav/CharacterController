@@ -1,78 +1,92 @@
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using KS.CharaCon;
-using KS.CharaCon.Utils;
+using System.Reflection;
+using CCN.Core;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 
-[CustomEditor(typeof(PlayerMovement))]
-public class PlayerMovementEditor : Editor
+[CustomEditor(typeof(Agent))]
+public class AgentEditor : Editor
 {
-    private PlayerMovement _playerMovement;
-    
+    private const BindingFlags BindingFlags = System.Reflection.BindingFlags.Default | System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.DeclaredOnly | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.FlattenHierarchy | System.Reflection.BindingFlags.InvokeMethod | System.Reflection.BindingFlags.CreateInstance | System.Reflection.BindingFlags.GetField | System.Reflection.BindingFlags.SetField | System.Reflection.BindingFlags.GetProperty | System.Reflection.BindingFlags.SetProperty | System.Reflection.BindingFlags.PutDispProperty | System.Reflection.BindingFlags.PutRefDispProperty | System.Reflection.BindingFlags.ExactBinding | System.Reflection.BindingFlags.SuppressChangeType | System.Reflection.BindingFlags.OptionalParamBinding | System.Reflection.BindingFlags.IgnoreReturn;
+    private static readonly Type TypeOfAbility = typeof(Ability);
+    private Agent _agent;
+    private SerializedProperty _abilities;
+
     private void OnEnable()
     {
-        _playerMovement = (PlayerMovement)target;
-        AbilitiesSearchProvider.RefreshAbilitiesList(_playerMovement);
+        _agent = (Agent)target;
+        _abilities = serializedObject.FindProperty("abilities");
+        AbilitiesSearchProvider.RefreshAbilitiesList(_agent);
     }
-    
+
     public override void OnInspectorGUI()
     {
+        EditorGUI.BeginChangeCheck();
         DrawDefaultInspector();
-
-        if (_playerMovement.__EditorModeRemoveEmptyAbility__())
+        RemoveEmptyAbilities();
+        if (EditorGUI.EndChangeCheck())
         {
-            EditorUtility.SetDirty(_playerMovement);
-            AbilitiesSearchProvider current = CreateInstance<AbilitiesSearchProvider>();
-            current.OnClose = AddAbility;
-            SearchWindow.Open(new SearchWindowContext(GUIUtility.GUIToScreenPoint(Event.current.mousePosition)), current);
+            AbilitiesSearchProvider.RefreshAbilitiesList(_agent);
         }
     }
 
-    private void AddAbility(Type type)
+    private static void CallMethod(Type type, object obj, string methodName, params object[] options)
     {
-        if (_playerMovement.__EditorModeAddAbility__(type))
+        MethodInfo methodInfo = type.GetMethod(methodName, BindingFlags);
+        if (methodInfo == null) Debug.LogError($"Method {methodName} not found");
+        else methodInfo?.Invoke(obj, options);
+    }
+
+    private void RemoveEmptyAbilities()
+    {
+        for (int i = 0; i < _abilities.arraySize; i++)
         {
-            EditorUtility.SetDirty(_playerMovement);
-            AbilitiesSearchProvider.RefreshAbilitiesList(_playerMovement);
+            SerializedProperty ability = _abilities.GetArrayElementAtIndex(i);
+            if (ability.managedReferenceValue == null)
+            {
+                _abilities.DeleteArrayElementAtIndex(i);
+                serializedObject.ApplyModifiedProperties();
+                
+                AbilitiesSearchProvider current = CreateInstance<AbilitiesSearchProvider>();
+                current.OnClose = SetPropertyAbilityType;
+                SearchWindow.Open(new SearchWindowContext(GUIUtility.GUIToScreenPoint(Event.current.mousePosition)), current);
+                return;
+            }
         }
     }
-}
 
-
-public class AbilitiesSearchProvider : ScriptableObject, ISearchWindowProvider
-{
-    public Action<Type> OnClose;
-    private static List<SearchTreeEntry> _treeEntries;
-
-    public static async void RefreshAbilitiesList(PlayerMovement playerMovement)
+    private void SetPropertyAbilityType(Type abilityType)
     {
-        await Task.Delay(10);
-        _treeEntries = new List<SearchTreeEntry>
+        if (_agent.HasAbility(abilityType))
         {
-            new SearchTreeGroupEntry(new GUIContent("Conditions"), 0)
-        };
-
-        foreach (Type type in typeof(Ability).AllChildClasses())
-        {
-            if (playerMovement.HasAbility(type)) continue;
-            
-            SearchTreeEntry item = new SearchTreeEntry(new GUIContent(type.Name));
-            item.level = 1;
-            item.userData = type;
-            _treeEntries.Add(item);
+            EditorUtility.DisplayDialog("Invalid", $"Ability of type {abilityType.Name} is already added to agent {_agent.gameObject}", "Okay");
+            return;
         }
-    }
-    
-    
-    public List<SearchTreeEntry> CreateSearchTree(SearchWindowContext context) => _treeEntries;
 
-    public bool OnSelectEntry(SearchTreeEntry searchTreeEntry, SearchWindowContext context)
-    {
-        OnClose?.Invoke((Type)searchTreeEntry.userData);
-        return true;
+        Ability ability = (Ability)Activator.CreateInstance(abilityType);
+        CallMethod(TypeOfAbility, ability, "Reset", _agent);
+
+        if (Application.isPlaying)
+        {
+            CallMethod(TypeOfAbility, ability, "Init", _agent);
+            if (_agent.enabled && _agent.gameObject.activeInHierarchy)
+            {
+                CallMethod(TypeOfAbility, ability, "OnPlayerEnabled");
+                CallMethod(TypeOfAbility, ability, "OnAbilityEnabled");
+            }
+            else
+            {
+                CallMethod(TypeOfAbility, ability, "OnPlayerDisabled");
+                CallMethod(TypeOfAbility, ability, "OnAbilityDisabled");
+            }
+        }
+
+        _abilities.arraySize++;
+        SerializedProperty property = _abilities.GetArrayElementAtIndex(_abilities.arraySize - 1);
+        property.managedReferenceValue = ability;
+        serializedObject.ApplyModifiedProperties();
+        EditorUtility.SetDirty(_agent);
     }
 }

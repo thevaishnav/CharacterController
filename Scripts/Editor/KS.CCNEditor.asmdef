@@ -2,7 +2,9 @@
     "name": "KS.CCNEditor",
     "rootNamespace": "",
     "references": [
-        "GUID:51e3ba2c74468e04a903e7564a471d08"
+        "GUID:51e3ba2c74468e04a903e7564a471d08",
+        "GUID:066fe0c83de2e8d42a7b5292f49c78a0",
+        "GUID:4860b2c10d41b4f46a4c10d02018cee4"
     ],
     "includePlatforms": [
         "Editor"
