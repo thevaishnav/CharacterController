@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace CCN.Core
 {
@@ -23,9 +21,6 @@ namespace CCN.Core
 
         /// <summary> Event fired every FixedUpdate </summary>
         public event Action EvFixedUpdate;
-
-        /// <summary> Event fired every LateUpdate </summary>
-        public event Action EvLateUpdate;
 
         /// <summary> Event fired every OnTriggerEntered </summary>
         public event Action<Collider> EvTriggerEntered;
@@ -47,45 +42,41 @@ namespace CCN.Core
         #endregion
 
         #region Serialized Fields
-        [Header("References")] 
-        [SerializeField, Tooltip("Player Animator")]
+        [Header("References")] [SerializeField, Tooltip("Agent Animator")]
         private Animator animator;
 
-        [SerializeField, Tooltip("Player Camera")]
+        [SerializeField, Tooltip("Agent Camera")]
         private Transform mCamera;
 
-        
-        [Header("Controls")] 
-        [SerializeField, Tooltip("Default Movement speed of the player, Note that if the enabled ability defines value for \"targetSpeed\" then that value will be used")]
-        private float moveSpeed = 5f;
+        [Header("Controls")] [SerializeField, Tooltip("Default Movement speed of the Agent")]
+        private float defaultMoveSpeed = 5f;
 
-        [SerializeField, Tooltip("Turn time of the player, how fast the player is allowed to turn")]
+        [SerializeField, Tooltip("How fast the Agent is allowed to turn")]
         private float turnTime = 0.1f;
 
         [SerializeField, Tooltip("Should the cursor be visible")]
         private bool hideCursor;
 
-        [SerializeField, Tooltip("If true player will always look in the direction of camera")]
-        private bool rotatePlayerWithCamera = true;
-        
-        [Header("Physics")]
-        [SerializeField, Tooltip("Physics layer for ground check")]
+        [SerializeField, Tooltip("If true Agent will always look in the direction of camera")]
+        private bool rotateAgentWithCamera = true;
+
+        [Header("Physics")] [SerializeField, Tooltip("Physics layer for ground check")]
         private LayerMask groundLayer;
 
-        [SerializeField, Tooltip("Ground distance form the center of player GameObject")]
+        [SerializeField, Tooltip("Ground distance form the center of Agent GameObject")]
         private Vector3 groundOffset;
 
-        [SerializeField, Tooltip("Radius of an imaginary sphere, if the ground is inside this sphere then player is considered to be grounded")]
+        [SerializeField, Tooltip("Radius of an imaginary sphere, if the ground is inside this sphere then Agent is considered to be grounded")]
         private float checkRadius = 0.4f;
-        
-        [SerializeField, Tooltip("Force of gravity applied on player every frame")]
+
+        [SerializeField, Tooltip("Force of gravity applied on Agent every frame")]
         public Vector3 gravity = new Vector3(0f, -9.8f, 0f);
-        
-        [SerializeField, Tooltip("Mass of player")]
+
+        [SerializeField, Tooltip("Mass of Agent")]
         public float mass = 100f;
-        
-        [SerializeReference, Tooltip("Abilities this player has")]
-        private Ability[] abilities;
+
+        [SerializeReference, Tooltip("Behaviours this Agent has")]
+        private AgentBehaviour[] behaviors;
         #endregion
 
         #region Private Fields
@@ -95,41 +86,43 @@ namespace CCN.Core
         /// <summary> Animator handler, this object will handle all the animation parameters </summary>
         private AnimatorHandler _animatorHandler;
 
-        /// <summary> Angle by which the player is rotated in this frame </summary>
+        // private Dictionary<ItemSpot, Item> _equippedItems;
+
+        /// <summary> Angle by which the Agent is rotated in this frame </summary>
         private Vector3 _frameRotDelta;
 
-        /// <summary> Ability that is currently enabled </summary>
-        private Ability _currentAbility;
+        /// <summary> Behaviour that is currently enabled </summary>
+        private AgentBehaviour _currentBehaviour;
 
-        /// <summary> Actual movement speed of the player </summary>
+        /// <summary> Actual movement speed of the Agent </summary>
         private float _moveSpeed;
 
-        /// <summary> Intermediate variable used to smoothen character rotation </summary>
+        /// <summary> Intermediate variable used to smoothen agent rotation </summary>
         private float _turnSmoothVelocity;
 
-        /// <summary> Current Acceleration of the player </summary>
+        /// <summary> Current Acceleration of the Agent </summary>
         private Vector3 _acceleration;
 
-        /// <summary> Current Velocity of the player </summary>
+        /// <summary> Current Velocity of the Agent </summary>
         private Vector3 _velocity;
 
         public Vector3 GroundCheckPosition => transform.TransformPoint(groundOffset);
         #endregion
 
         #region Public Fields
-        /// <summary> Current Acceleration of the player </summary>
+        /// <summary> Current Acceleration of the Agent </summary>
         public Vector3 Acceleration => _acceleration;
 
-        /// <summary> Current Velocity of the player </summary>
+        /// <summary> Current Velocity of the Agent </summary>
         public Vector3 Velocity => _velocity;
 
-        /// <summary> Current speed of the player </summary>
+        /// <summary> Current speed of the Agent </summary>
         public float Speed => _animatorHandler.Speed;
 
-        /// <summary> Is player moving </summary>
+        /// <summary> Is Agent moving </summary>
         public bool IsMoving => _animatorHandler.IsMoving;
 
-        /// <summary> Is player touching the ground </summary>
+        /// <summary> Is Agent touching the ground </summary>
         public bool IsGrounded => _animatorHandler.IsGrounded;
 
         /// <summary> Variable synchronised across all the devices (connected by photon) </summary>
@@ -160,23 +153,30 @@ namespace CCN.Core
             set => _animatorHandler.ManagedFloat2 = value;
         }
 
-        public int AbilityId => _animatorHandler.AbilityId;
+        public int BehaviourId => _animatorHandler.BehaviourId;
         #endregion
 
         #region Unity Callback
         private void OnEnable() => EvEnabled?.Invoke();
         private void OnDisable() => EvDisabled?.Invoke();
+        private void OnTriggerEnter(Collider other) => EvTriggerEntered?.Invoke(other);
+        private void OnTriggerStay(Collider other) => EvTriggerStay?.Invoke(other);
+        private void OnTriggerExit(Collider other) => EvTriggerExit?.Invoke(other);
+        private void OnCollisionEnter(Collision collision) => EvCollisionEnter?.Invoke(collision);
+        private void OnCollisionStay(Collision collision) => EvCollisionStay?.Invoke(collision);
+        private void OnCollisionExit(Collision collision) => EvCollisionExit?.Invoke(collision);
 
         private void Awake()
         {
+            _moveSpeed = defaultMoveSpeed;
             _acceleration = Vector3.zero;
             _velocity = Vector3.zero;
             _animatorHandler = new AnimatorHandler(animator);
+            // _equippedItems = new Dictionary<ItemSpot, Item>();
 
-            _moveSpeed = float.MinValue;
-            foreach (Ability ability in abilities)
+            foreach (AgentBehaviour behaviour in behaviors)
             {
-                ability.Init(this);
+                behaviour.Init(this);
             }
 
             UpdateMovementSpeed();
@@ -196,14 +196,14 @@ namespace CCN.Core
         {
             EvFixedUpdate?.Invoke();
             _animatorHandler.IsGrounded = Physics.CheckSphere(GroundCheckPosition, checkRadius, groundLayer);
-            
+
             if (_animatorHandler.IsGrounded && _velocity.y < 0) _velocity.y = -2f;
 
             _velocity += _acceleration * Time.fixedDeltaTime;
             _acceleration = gravity;
 
             Vector3 pos = transform.position;
-            _buildInController.Move(_velocity * Time.fixedDeltaTime);   // Distance moved may not be same as the distance provided here, if the character is held back by a collider
+            _buildInController.Move(_velocity * Time.fixedDeltaTime); // Distance moved may not be same as the distance provided here, if the agent is held back by a collider
             // ReSharper disable once Unity.InefficientPropertyAccess
             _animatorHandler.Speed = (transform.position - pos).magnitude / Time.fixedDeltaTime;
 
@@ -220,11 +220,6 @@ namespace CCN.Core
             MoveByInputs();
         }
 
-        private void LateUpdate()
-        {
-            EvLateUpdate?.Invoke();
-        }
-
         private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.yellow;
@@ -232,90 +227,10 @@ namespace CCN.Core
             Gizmos.DrawWireSphere(center, checkRadius);
             Gizmos.DrawSphere(center, 0.005f);
         }
-
-        private void OnTriggerEnter(Collider other) => EvTriggerEntered?.Invoke(other);
-        private void OnTriggerStay(Collider other) => EvTriggerStay?.Invoke(other);
-        private void OnTriggerExit(Collider other) => EvTriggerExit?.Invoke(other);
-        private void OnCollisionEnter(Collision collision) => EvCollisionEnter?.Invoke(collision);
-        private void OnCollisionStay(Collision collision) => EvCollisionStay?.Invoke(collision);
-        private void OnCollisionExit(Collision collision) => EvCollisionExit?.Invoke(collision);
         #endregion
 
-        #region Methods
-        /// <summary> Move the player GameObject according to inputs bu user </summary>
-        private void MoveByInputs()
-        {
-            Vector3 direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
-
-            if (direction.sqrMagnitude > 0.1f)
-            {
-                float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-                if (rotatePlayerWithCamera) targetAngle += mCamera.eulerAngles.y;
-
-                float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref _turnSmoothVelocity, turnTime);
-                transform.rotation = Quaternion.Euler(0f, angle, 0f);
-
-                Vector3 move = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward * _moveSpeed;
-                _velocity.x = move.x;
-                _velocity.z = move.z;
-            }
-            else
-            {
-                _velocity.x = 0;
-                _velocity.z = 0;
-                _animatorHandler.Speed = 0f;
-            }
-        }
-
-        /// <summary> Set state of an ability </summary>
-        /// <param name="ability"> Ability of which state is to be set </param>
-        /// <param name="value"> Should this ability be enabled or disabled </param>
-        private void SetAbilityActiveInner(Ability ability, bool value)
-        {
-            if (value)
-            {
-                _currentAbility = ability;
-                _animatorHandler.AbilityId = ability.AbilityId;
-            }
-            else
-            {
-                _currentAbility = null;
-                _animatorHandler.AbilityId = 0;
-            }
-
-            ability.DoEnable(value);
-            UpdateMovementSpeed();
-        }
-
-        /// <summary> Update <see cref="_moveSpeed"/> variable </summary>
-        private void UpdateMovementSpeed()
-        {
-            if (_currentAbility != null && _currentAbility.TargetSpeed > AnimatorHandler.MinMoveSpeed)
-            {
-                _moveSpeed = _currentAbility.TargetSpeed;
-            }
-            else
-            {
-                _moveSpeed = moveSpeed;
-            }
-        }
-
-        /// <summary> Checks if the ability is loaded to be used </summary>
-        /// <typeparam name="T"> Type of ability to be checked </typeparam>
-        /// <returns> true if the ability is loaded </returns>
-        public bool HasAbility<T>() where T : Ability => GetAbility<T>() != null;
-
-        /// <summary> Checks if the ability is loaded to be used </summary>
-        /// <param name="t"> Type of ability to be checked </param>
-        /// <returns> true if the ability is loaded </returns>
-        public bool HasAbility(Type t) => GetAbility(t) != null;
-
-        /// <summary> Checks if the ability is loaded to be used </summary>
-        /// <param name="ability">Ability to be checked</param>
-        /// <returns> true if the ability is loaded </returns>
-        public bool HasAbility(Ability ability) => GetAbility(ability.GetType()) == ability;
-
-        /// <summary> Add a force to player GameObject </summary>
+        #region Movements
+        /// <summary> Add a force to Agent GameObject </summary>
         /// <param name="value"> Amount of force to be added </param>
         /// <param name="forceMode"> Nature of force to be added </param>
         public void AddForce(Vector3 value, ForceMode forceMode = ForceMode.Force)
@@ -338,7 +253,7 @@ namespace CCN.Core
             }
         }
 
-        /*/// <summary> Add a torque to player GameObject </summary>
+        /// <summary> Add a torque to Agent GameObject </summary>
         /// <param name="value"> Amount of torque to be added </param>
         /// <param name="forceMode"> Nature of torque to be added </param>
         public void AddTorque(Vector3 value, ForceMode forceMode = ForceMode.Force)
@@ -358,150 +273,289 @@ namespace CCN.Core
                     _frameRotDelta += value;
                     break;
             }
-        }*/
-
-        /// <summary> Try to enable an ability. </summary>
-        /// <param name="ability"> Ability to be enabled </param>
-        /// <param name="force"> Should this ability be enabled even if the currently enabled ability blocks this ability enable. </param>
-        /// <returns> true if the ability was enabled </returns>
-        public bool TryEnableAbility(Ability ability, bool force = false)
-        {
-            if (!this.HasAbility(ability)) return false;
-
-            bool currAbiNul = _currentAbility == null;
-            if (force || currAbiNul || _currentAbility.ShouldBlockAbilityStart(ability) == false)
-            {
-                if (currAbiNul == false) SetAbilityActiveInner(_currentAbility, false);
-                SetAbilityActiveInner(ability, true);
-                return true;
-            }
-
-            return false;
         }
 
-        /// <summary> Try to disable an ability. </summary>
-        /// <param name="ability">Ability to be disable</param>
-        /// <param name="force"> Should this ability be disabled even if the currently enabled ability blocks this ability disable. </param>
-        /// <returns> true if the ability was disabled </returns>
-        public bool TryDisableAbility(Ability ability, bool force = false)
+        /// <summary> Move the Agent GameObject according to inputs bu user </summary>
+        private void MoveByInputs()
         {
-            if (!HasAbility(ability) || !ability.IsEnabled) return false;
+            Vector3 direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
 
-            if (force || (_currentAbility != null && !_currentAbility.ShouldBlockAbilityStop(ability)))
+            if (direction.sqrMagnitude > 0.1f)
             {
-                SetAbilityActiveInner(ability, false);
-                return true;
+                float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+                if (rotateAgentWithCamera) targetAngle += mCamera.eulerAngles.y;
+
+                float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref _turnSmoothVelocity, turnTime);
+                transform.rotation = Quaternion.Euler(0f, angle, 0f);
+
+                Vector3 move = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward * _moveSpeed;
+                _velocity.x = move.x;
+                _velocity.z = move.z;
             }
-
-            return false;
-        }
-
-        /// <summary> Get an ability of the given type </summary>
-        /// <typeparam name="T"> type of ability </typeparam>
-        /// <returns> ability instance if that ability is loaded, null otherwise </returns>
-        public T GetAbility<T>() where T : Ability
-        {
-            foreach (Ability ability in abilities)
+            else
             {
-                if (ability is T abiT) return abiT;
+                _velocity.x = 0;
+                _velocity.z = 0;
+                _animatorHandler.Speed = 0f;
             }
-
-            return null;
         }
-
-        /// <summary> Get an ability of the given type </summary>
-        /// <param name="abilityType"> type of ability </param>
-        /// <returns> Ability instance if that ability is loaded, null if the ability is not loaded of given type if not subclass of <see cref="Ability"/> </returns>
-        public Ability GetAbility(Type abilityType)
+        
+        /// <summary> Update actual move speed of agent </summary>
+        private void UpdateMovementSpeed()
         {
-            if (!abilityType.IsSubclassOf(typeof(Ability))) return null;
-            if (abilities == null || abilities.Length == 0) return null;
+            _moveSpeed = defaultMoveSpeed;
+            if (_currentBehaviour != null) _moveSpeed *= _currentBehaviour.MoveSpeedMultiplier;
 
-            foreach (Ability ability in abilities)
+            /*foreach (KeyValuePair<ItemSpot, Item> pair in _equippedItems)
             {
-                if (ability == null) continue;
-                if (ability.GetType() == abilityType)
+                if (pair.Value != null)
                 {
-                    return ability;
+                    _moveSpeed *= pair.Value.MoveSpeedMultiplier;
                 }
-            }
-            return null;
-        }
-
-        /// <summary> Try Get an ability of the given type </summary>
-        /// <param name="ability"> output parameter, this will be set to ability instance </param>
-        /// <typeparam name="T"> type of ability </typeparam>
-        /// <returns> true if ability is found, null otherwise </returns>
-        public bool TryGetAbility<T>(out T ability) where T : Ability
-        {
-            ability = GetAbility<T>();
-            return ability == null;
-        }
-
-        /// <summary> Try Get an ability of the given type </summary>
-        /// <param name="abilityType"> type of ability </param>
-        /// <param name="ability"> output parameter, this will be set to ability instance </param>
-        /// <returns> true if ability is found, null otherwise </returns>
-        public bool TryGetAbility(Type abilityType, out Ability ability)
-        {
-            ability = GetAbility(abilityType);
-            return ability == null;
+            }*/
         }
         #endregion
 
-        /*#region Editor
-        #if UNITY_EDITOR
-        /// <summary> EDITOR ONLY METHOD. Load an ability of the given type </summary>
-        /// <param name="abilityType"> type of ability </param>
-        /// <returns> Tru if the ability was added </returns>
-        public bool __EditorModeAddAbility__(Type abilityType)
+        #region Behaviour
+        /// <summary> Set state of an behaviour </summary>
+        /// <param name="behaviour"> Behaviour of which state is to be set </param>
+        /// <param name="value"> Should this behaviour be enabled or disabled </param>
+        private void SetBehaviourActiveInner(AgentBehaviour behaviour, bool value)
         {
-            if (HasAbility(abilityType)) return false;
-
-            Ability ability = (Ability)Activator.CreateInstance(abilityType);
-            ability.Reset(this);
-
-            ArrayUtility.Add(ref abilities, ability);
-            if (Application.isPlaying)
+            if (value)
             {
-                ability.Init(this);
-                BindingFlags flags = BindingFlags.Default | BindingFlags.Instance | BindingFlags.CreateInstance | BindingFlags.DeclaredOnly | BindingFlags.NonPublic;
-                if (enabled)
-                {
-                    ability.GetType().GetMethod("OnPlayerEnabled", flags)?.Invoke(ability,null);
-                    ability.GetType().GetMethod("OnAbilityEnabled", flags)?.Invoke(ability,null);
-                }
-                else
-                {
-                    ability.GetType().GetMethod("OnPlayerDisabled", flags)?.Invoke(ability,null);
-                    ability.GetType().GetMethod("OnAbilityDisabled", flags)?.Invoke(ability,null);
-                }
+                _currentBehaviour = behaviour;
+                _animatorHandler.BehaviourId = behaviour.ID;
             }
-            return true;
+            else
+            {
+                _currentBehaviour = null;
+                _animatorHandler.BehaviourId = 0;
+            }
+
+            behaviour.DoSetState(value);
+            UpdateMovementSpeed();
         }
 
-        /// <summary> EDITOR ONLY METHOD. Check if an empty ability is loaded and removes if found. </summary>
-        /// <returns> true if the empty ability was found </returns>
-        public bool __EditorModeRemoveEmptyAbility__()
-        {
-            if (abilities == null) return false;
-            
-            int i = 0;
-            foreach (Ability ability in abilities)
-            {
-                if (ability == null)
-                {
-                    ArrayUtility.RemoveAt(ref abilities, i);
-                    return true;
-                }
+        /// <summary> Checks if the behaviour is loaded to be used </summary>
+        /// <typeparam name="T"> Type of behaviour to be checked </typeparam>
+        /// <returns> true if the behaviour is loaded </returns>
+        public bool HasBehavior<T>() where T : AgentBehaviour => GetBehavior<T>() != null;
 
-                i++;
+        /// <summary> Checks if the behaviour is loaded to be used </summary>
+        /// <param name="t"> Type of behaviour to be checked </param>
+        /// <returns> true if the behaviour is loaded </returns>
+        public bool HasBehavior(Type t) => GetBehavior(t) != null;
+
+        /// <summary> Checks if the behaviour is loaded to be used </summary>
+        /// <param name="behaviour">Behaviour to be checked</param>
+        /// <returns> true if the behaviour is loaded </returns>
+        public bool HasBehavior(AgentBehaviour behaviour) => GetBehavior(behaviour.GetType()) == behaviour;
+
+        /// <summary> Try to enable an behaviour. </summary>
+        /// <param name="behaviour"> Behaviour to be enabled </param>
+        /// <param name="force"> Should this behaviour be enabled even if the currently enabled behaviour blocks this behaviour enable. </param>
+        /// <returns> true if the behaviour was enabled </returns>
+        public bool TryEnableBehaviour(AgentBehaviour behaviour, bool force = false)
+        {
+            if (!this.HasBehavior(behaviour)) return false;
+
+            bool currentBehaviourIsNull = _currentBehaviour == null;
+            if (force || currentBehaviourIsNull || _currentBehaviour.ShouldBlockBehaviorStart(behaviour) == false)
+            {
+                if (currentBehaviourIsNull == false) SetBehaviourActiveInner(_currentBehaviour, false);
+                SetBehaviourActiveInner(behaviour, true);
+                return true;
             }
 
             return false;
         }
-        #endif
+
+        /// <summary> Try to disable an behaviour. </summary>
+        /// <param name="behaviour">Behaviour to be disable</param>
+        /// <param name="force"> Should this behaviour be disabled even if the currently enabled behaviour blocks this behaviour disable. </param>
+        /// <returns> true if the behaviour was disabled </returns>
+        public bool TryDisableBehavior(AgentBehaviour behaviour, bool force = false)
+        {
+            if (!HasBehavior(behaviour) || !behaviour.IsEnabled) return false;
+
+            if (force || (_currentBehaviour != null && !_currentBehaviour.ShouldBlockBehaviorStop(behaviour)))
+            {
+                SetBehaviourActiveInner(behaviour, false);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary> Get an behaviour of the given type </summary>
+        /// <typeparam name="T"> type of behaviour </typeparam>
+        /// <returns> behaviour instance if that behaviour is loaded, null otherwise </returns>
+        public T GetBehavior<T>() where T : AgentBehaviour
+        {
+            foreach (AgentBehaviour behaviour in behaviors)
+            {
+                if (behaviour is T abiT) return abiT;
+            }
+
+            return null;
+        }
+
+        /// <summary> Get an behaviour of the given type </summary>
+        /// <param name="behaviorType"> type of behaviour </param>
+        /// <returns> Behaviour instance if that behaviour is loaded, null if the behaviour is not loaded of given type if not subclass of <see cref="AgentBehaviour"/> </returns>
+        public AgentBehaviour GetBehavior(Type behaviorType)
+        {
+            if (!behaviorType.IsSubclassOf(typeof(AgentBehaviour))) return null;
+            if (behaviors == null || behaviors.Length == 0) return null;
+
+            foreach (AgentBehaviour behaviour in behaviors)
+            {
+                if (behaviour == null) continue;
+                if (behaviour.GetType() == behaviorType)
+                {
+                    return behaviour;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary> Try Get an behaviour of the given type </summary>
+        /// <param name="behavior"> output parameter, this will be set to behaviour instance </param>
+        /// <typeparam name="T"> type of behaviour </typeparam>
+        /// <returns> true if behaviour is found, null otherwise </returns>
+        public bool TryGetBehavior<T>(out T behavior) where T : AgentBehaviour
+        {
+            behavior = GetBehavior<T>();
+            return behavior == null;
+        }
+
+        /// <summary> Try Get an behaviour of the given type </summary>
+        /// <param name="behaviorType"> type of behaviour </param>
+        /// <param name="behaviour"> output parameter, this will be set to behaviour instance </param>
+        /// <returns> true if behaviour is found, null otherwise </returns>
+        public bool TryGetBehavior(Type behaviorType, out AgentBehaviour behaviour)
+        {
+            behaviour = GetBehavior(behaviorType);
+            return behaviour == null;
+        }
+        #endregion
+
+        /*#region Items
+        private IEnumerator ResetUseAnimatorParameter(int expectedValue)
+        {
+            yield return null;
+            yield return null;
+            if (_animatorHandler.UsingItemId == expectedValue)
+            {
+                _animatorHandler.UsingItemId = 0;
+            }
+        }
+
+        private IEnumerator EquipItem(Item item1, Item item, bool force)
+        {
+            Item alreadyEquippedAtSpot;
+            if (force)
+            {
+                if (_equippedItems.TryGetValue(item.Spot, out alreadyEquippedAtSpot))
+                {
+                    if (alreadyEquippedAtSpot != null) alreadyEquippedAtSpot.OnUnequip();
+                    item.OnEquip();
+                    _equippedItems[item.Spot] = item;
+                }
+                else
+                {
+                    item.OnEquip();
+                    _equippedItems.Add(item.Spot, item);
+                }
+
+                UpdateMovementSpeed();
+                return true;
+            }
+
+            if (_equippedItems.TryGetValue(item.Spot, out alreadyEquippedAtSpot))
+            {
+                if (alreadyEquippedAtSpot != null && alreadyEquippedAtSpot.CanUnequip() == false) return false;
+
+                alreadyEquippedAtSpot.OnUnequip();
+                item.OnEquip();
+                _equippedItems[item.Spot] = item;
+
+                UpdateMovementSpeed();
+                return true;
+            }
+            else
+            {
+                item.OnEquip();
+                _equippedItems.Add(item.Spot, item);
+
+                UpdateMovementSpeed();
+                return true;
+            }
+        }
+
+        public Item GetItem(ItemSpot spot)
+        {
+            if (_equippedItems.TryGetValue(spot, out Item item)) return item;
+            return null;
+        }
+
+        public bool TryGetItem(ItemSpot spot, out Item item)
+        {
+            return _equippedItems.TryGetValue(spot, out item) && item != null;
+        }
+
+        public bool IsSpotOccupied(ItemSpot spot)
+        {
+            return _equippedItems.TryGetValue(spot, out Item item) && item != null;
+        }
+        
+        public bool IsSpotEmpty(ItemSpot spot)
+        {
+            return !IsSpotOccupied(spot);
+        }
+        
+        /*public void SetItemActiveInner(Item item, bool value)
+        {
+            if (value)
+            {
+                _equippedItems[item.Spot] = item;
+                _animatorHandler.EquippedItemId = item.ID;
+                StartCoroutine(ResetUseAnimatorParameter(true, item.ID));
+            }
+            else
+            {
+                _equippedItems.Remove(item.Spot);
+                _animatorHandler.EquippedItemId = -item.ID;
+                StartCoroutine(ResetUseAnimatorParameter(true, -item.ID));
+            }
+
+            item.DoSetState(value);
+            UpdateMovementSpeed();
+        }#1#
+
+        public bool TryEquipItem(Item item, bool force = false)
+        {
+            _equippedItems.TryGetValue(item.Spot, out Item alreadyEquippedAtSpot);
+            StartCoroutine(EquipItem(item, alreadyEquippedAtSpot, force));
+            return force || alreadyEquippedAtSpot == null || alreadyEquippedAtSpot.CanUnequip();
+        }
+
+        public bool TryUnequipItem(Item item, bool force = false)
+        {
+            return true;
+        }
+
+        public void UseItem(Item item)
+        {
+            if (item.IsEnabled && _equippedItems.TryGetValue(item.Spot, out Item equipped) && equipped == item)
+            {
+                item.OnUse();
+                _animatorHandler.UsingItemId = item.ID;
+                StartCoroutine(ResetUseAnimatorParameter(false, item.ID));
+            }
+        }
         #endregion*/
     }
-    
 }

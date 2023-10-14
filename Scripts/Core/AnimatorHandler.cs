@@ -9,7 +9,9 @@ namespace CCN.Core
         public static readonly float MinMoveSpeed = 0.005f;
         public static readonly float SqreMinMoveSpeed = MinMoveSpeed * MinMoveSpeed;
         
-        private static readonly int ID_AbilityId = Animator.StringToHash("Ability ID");
+        private static readonly int ID_BehaviourId = Animator.StringToHash("Behaviour ID");
+        private static readonly int ID_EquippedId = Animator.StringToHash("Equipped Item ID");
+        private static readonly int ID_UsingEquipped = Animator.StringToHash("Using Item ID");
         private static readonly int ID_Speed = Animator.StringToHash("Speed");
         private static readonly int ID_IsMoving = Animator.StringToHash("Moving");
         private static readonly int ID_IsGrounded = Animator.StringToHash("Grounded");
@@ -22,7 +24,9 @@ namespace CCN.Core
         #region Fields and Properties
         private bool _isGrounded;
         private float _currentSpeed;
-        private int _abilityId;
+        private int _behaviourId;
+        private int _equippedItemId;
+        private int _usingItemId;
         private int _managedInt1;
         private int _managedInt2;
         private float _managedFloat1;
@@ -30,10 +34,20 @@ namespace CCN.Core
         private readonly Animator _animator;
         
         
-        /// <summary> Is the player moving </summary>
-        public bool IsMoving => _animator.GetBool(ID_IsMoving);
+        /// <summary> Is the Agent moving </summary>
+        public bool IsMoving { get; private set; }
 
-        /// <summary> Is the player touching the ground </summary>
+        public int UsingItemId
+        {
+            get => _usingItemId;
+            set
+            {
+                _animator.SetInteger(ID_UsingEquipped, value);
+                _usingItemId = value;
+            }
+        }
+
+        /// <summary> Is the Agent touching the ground </summary>
         public bool IsGrounded
         {
             get => _isGrounded;
@@ -44,7 +58,7 @@ namespace CCN.Core
             }
         }
 
-        /// <summary> Movement speed of player </summary>
+        /// <summary> Movement speed of Agent </summary>
         public float Speed
         {
             get => this._currentSpeed;
@@ -54,28 +68,41 @@ namespace CCN.Core
                 {
                     _animator.SetBool(ID_IsMoving, true);
                     _animator.SetFloat(ID_Speed, value);
+                    IsMoving = true;
                     _currentSpeed = value;
                 }
                 else
                 {
                     _animator.SetBool(ID_IsMoving, false);
                     _animator.SetFloat(ID_Speed, 0f);
+                    IsMoving = false;
                     _currentSpeed = 0f;
                 }
             }
         }
 
-        /// <summary> Ability Index of currently enabled ability </summary>
-        public int AbilityId
+        /// <summary> Behaviour Index of currently enabled behaviour </summary>
+        public int BehaviourId
         {
-            get => _abilityId;
+            get => _behaviourId;
             set
             {
-                _animator.SetInteger(ID_AbilityId, value);
-                _abilityId = value;
+                _animator.SetInteger(ID_BehaviourId, value);
+                _behaviourId = value;
             }
         }
 
+        public int EquippedItemId
+        {
+            get => _equippedItemId;
+            set
+            {
+                _animator.SetInteger(ID_EquippedId, value);
+                _equippedItemId = value;
+            }
+        }
+
+        
         /// <summary> Variable synchronised across all the devices (connected by photon) </summary>
         public int ManagedInt1
         {
@@ -119,11 +146,13 @@ namespace CCN.Core
                 _managedFloat2 = value;
             }
         }
+
         #endregion
         public AnimatorHandler(Animator animator)
         {
             _animator = animator;
             _currentSpeed = 0f;
+            IsMoving = false;
             animator.SetFloat(ID_Speed, 0f);
             animator.SetBool(ID_IsMoving, false);
         }

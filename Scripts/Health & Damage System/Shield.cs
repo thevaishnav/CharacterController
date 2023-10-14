@@ -1,5 +1,4 @@
 using System;
-using CCN.Health.Collections;
 using UnityEngine;
 
 namespace CCN.Health

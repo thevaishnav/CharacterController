@@ -1,4 +1,4 @@
-using CCN.Health.Collections;
+using CCN.Collections;
 using MenuManagement.Base;
 using UnityEngine;
 using UnityEngine.Events;

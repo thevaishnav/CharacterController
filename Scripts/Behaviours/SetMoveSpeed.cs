@@ -2,14 +2,14 @@ using System;
 using CCN.Core;
 using UnityEngine;
 
-namespace CCN.Abilities
+namespace CCN.Behaviours
 {
-    /// <summary> Run or Walk slowly ability for the player </summary>
+    /// <summary> Run or Walk slowly behaviour for the agent </summary>
     [Serializable]
-    [DefaultAbilityId(-3)]
-    [DefaultMoveSpeed(10)]
+    [DefaultId(-3)]
+    [DefaultMoveSpeedMultiplier(2f)]
     [StartStopProfileInfo(StartStopProfile.Behaviour.ActiveWhilePressed, StartStopProfile.TriggerType.GetKey, "", KeyCode.LeftShift)]
-    public class SpeedChange : Ability
+    public class SetMoveSpeed : AgentBehaviour
     {
     }
 }

@@ -10,15 +10,15 @@ using UnityEngine;
 public class AgentEditor : Editor
 {
     private const BindingFlags BindingFlags = System.Reflection.BindingFlags.Default | System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.DeclaredOnly | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.FlattenHierarchy | System.Reflection.BindingFlags.InvokeMethod | System.Reflection.BindingFlags.CreateInstance | System.Reflection.BindingFlags.GetField | System.Reflection.BindingFlags.SetField | System.Reflection.BindingFlags.GetProperty | System.Reflection.BindingFlags.SetProperty | System.Reflection.BindingFlags.PutDispProperty | System.Reflection.BindingFlags.PutRefDispProperty | System.Reflection.BindingFlags.ExactBinding | System.Reflection.BindingFlags.SuppressChangeType | System.Reflection.BindingFlags.OptionalParamBinding | System.Reflection.BindingFlags.IgnoreReturn;
-    private static readonly Type TypeOfAbility = typeof(Ability);
+    private static readonly Type TypeOfBehaviour = typeof(AgentBehaviour);
     private Agent _agent;
     private SerializedProperty _abilities;
 
     private void OnEnable()
     {
         _agent = (Agent)target;
-        _abilities = serializedObject.FindProperty("abilities");
-        AbilitiesSearchProvider.RefreshAbilitiesList(_agent);
+        _abilities = serializedObject.FindProperty("behaviors");
+        BehavioursSearchProvider.RefreshBehavioursList(_agent);
     }
 
     public override void OnInspectorGUI()
@@ -28,7 +28,7 @@ public class AgentEditor : Editor
         RemoveEmptyAbilities();
         if (EditorGUI.EndChangeCheck())
         {
-            AbilitiesSearchProvider.RefreshAbilitiesList(_agent);
+            BehavioursSearchProvider.RefreshBehavioursList(_agent);
         }
     }
 
@@ -43,13 +43,13 @@ public class AgentEditor : Editor
     {
         for (int i = 0; i < _abilities.arraySize; i++)
         {
-            SerializedProperty ability = _abilities.GetArrayElementAtIndex(i);
-            if (ability.managedReferenceValue == null)
+            SerializedProperty behaviour = _abilities.GetArrayElementAtIndex(i);
+            if (behaviour.managedReferenceValue == null)
             {
                 _abilities.DeleteArrayElementAtIndex(i);
                 serializedObject.ApplyModifiedProperties();
                 
-                AbilitiesSearchProvider current = CreateInstance<AbilitiesSearchProvider>();
+                BehavioursSearchProvider current = CreateInstance<BehavioursSearchProvider>();
                 current.OnClose = SetPropertyAbilityType;
                 SearchWindow.Open(new SearchWindowContext(GUIUtility.GUIToScreenPoint(Event.current.mousePosition)), current);
                 return;
@@ -59,33 +59,33 @@ public class AgentEditor : Editor
 
     private void SetPropertyAbilityType(Type abilityType)
     {
-        if (_agent.HasAbility(abilityType))
+        if (_agent.HasBehavior(abilityType))
         {
-            EditorUtility.DisplayDialog("Invalid", $"Ability of type {abilityType.Name} is already added to agent {_agent.gameObject}", "Okay");
+            EditorUtility.DisplayDialog("Invalid", $"Behaviour of type {abilityType.Name} is already added to agent {_agent.gameObject}", "Okay");
             return;
         }
 
-        Ability ability = (Ability)Activator.CreateInstance(abilityType);
-        CallMethod(TypeOfAbility, ability, "Reset", _agent);
+        AgentBehaviour behaviour = (AgentBehaviour)Activator.CreateInstance(abilityType);
+        CallMethod(TypeOfBehaviour, behaviour, "Reset", _agent);
 
         if (Application.isPlaying)
         {
-            CallMethod(TypeOfAbility, ability, "Init", _agent);
+            CallMethod(TypeOfBehaviour, behaviour, "Init", _agent);
             if (_agent.enabled && _agent.gameObject.activeInHierarchy)
             {
-                CallMethod(TypeOfAbility, ability, "OnPlayerEnabled");
-                CallMethod(TypeOfAbility, ability, "OnAbilityEnabled");
+                CallMethod(TypeOfBehaviour, behaviour, "OnAgentEnabled");
+                CallMethod(TypeOfBehaviour, behaviour, "OnBehaviourEnabled");
             }
             else
             {
-                CallMethod(TypeOfAbility, ability, "OnPlayerDisabled");
-                CallMethod(TypeOfAbility, ability, "OnAbilityDisabled");
+                CallMethod(TypeOfBehaviour, behaviour, "OnAgentDisabled");
+                CallMethod(TypeOfBehaviour, behaviour, "OnBehaviourDisabled");
             }
         }
 
         _abilities.arraySize++;
         SerializedProperty property = _abilities.GetArrayElementAtIndex(_abilities.arraySize - 1);
-        property.managedReferenceValue = ability;
+        property.managedReferenceValue = behaviour;
         serializedObject.ApplyModifiedProperties();
         EditorUtility.SetDirty(_agent);
     }

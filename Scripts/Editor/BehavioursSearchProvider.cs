@@ -7,30 +7,30 @@ using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 
-public class AbilitiesSearchProvider : ScriptableObject, ISearchWindowProvider
+public class BehavioursSearchProvider : ScriptableObject, ISearchWindowProvider
 {
-    private static List<Type> AllAbilityClasses;
+    private static List<Type> AllBehaviourClasses;
 
     public Action<Type> OnClose;
     private static List<SearchTreeEntry> _treeEntries;
 
-    static AbilitiesSearchProvider()
+    static BehavioursSearchProvider()
     {
-        AllAbilityClasses = new List<Type>();
-        var type = typeof(Ability);
+        AllBehaviourClasses = new List<Type>();
+        var type = typeof(AgentBehaviour);
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
             foreach (Type classType in assembly.GetTypes())
             {
                 if (classType.IsSubclassOf(type) && !classType.IsAbstract)
                 {
-                    AllAbilityClasses.Add(classType);
+                    AllBehaviourClasses.Add(classType);
                 }
             }
         }
     }
 
-    public static async void RefreshAbilitiesList(Agent agent)
+    public static async void RefreshBehavioursList(Agent agent)
     {
         await Task.Delay(10);
         _treeEntries = new List<SearchTreeEntry>
@@ -38,9 +38,9 @@ public class AbilitiesSearchProvider : ScriptableObject, ISearchWindowProvider
             new SearchTreeGroupEntry(new GUIContent("Conditions"), 0)
         };
 
-        foreach (Type type in AllAbilityClasses)
+        foreach (Type type in AllBehaviourClasses)
         {
-            if (agent.HasAbility(type)) continue;
+            if (agent.HasBehavior(type)) continue;
 
             SearchTreeEntry item = new SearchTreeEntry(new GUIContent(type.Name));
             item.level = 1;

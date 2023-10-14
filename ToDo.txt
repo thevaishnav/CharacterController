@@ -1,16 +1,15 @@
-Allow ability to subscribe to events like: 
- 	- PlayerFixedUpdate, 
- 	- PlayerLateUpdate,
- 	- PlayerTriggerEnter
- 	- PlayerTriggerStay
- 	- PlayerTriggerExit
- 	- AbilityFixedUpdate, 
- 	- AbilityLateUpdate,
- 	- AbilityTriggerEnter
- 	- AbilityTriggerStay
- 	- AbilityTriggerExit
-Where Player____ events are called regardless of ability is enabled or not, and Ability____ events are called only when ability is enabled.
-Ability should only subscribe to those event which are overwritten by user. To achieve this, Create a scriptable object that stores the data related to which ability class overrides which methods. This data should be updated whenever the scripts are reloaded. 
+Allow behaviour to subscribe to events like: 
+ 	- AgentFixedUpdate, 
+ 	- AgentLateUpdate,
+ 	- AgentTriggerEnter
+ 	- AgentTriggerStay
+ 	- AgentTriggerExit
+ 	- BehaviourFixedUpdate, 
+ 	- BehaviourLateUpdate,
+ 	- BehaviourTriggerEnter
+ 	- BehaviourTriggerStay
+ 	- BehaviourTriggerExit
+Where Agent____ events are called with agent regardless of behaviour is enabled or not, and Behaviour____ events are called only when Behaviour is enabled.
+Behaviour should only subscribe to those event which are overwritten by user. To achieve this, Create a scriptable object that stores the data related to which Behaviour class overrides which methods. This data should be updated whenever the scripts are reloaded. 
 =======================================================
-In JumpAbility, Move logic to apply persistant force from AbilityUpdate to AbilityFixedUpdate so that becomes frame rate independant.
-========================================================
+

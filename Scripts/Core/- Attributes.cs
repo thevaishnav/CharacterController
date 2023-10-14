@@ -3,29 +3,29 @@ using UnityEngine;
 
 namespace CCN.Core
 {
-    /// <summary> <see cref="Ability.AbilityId"/> of this ability when it is created in the inspector </summary>
+    /// <summary> <see cref="AgentBehaviour.ID"/> of this behaviour when it is created in the inspector </summary>
     [AttributeUsage(AttributeTargets.Class)]
-    public class DefaultAbilityId : Attribute
+    public class DefaultId : Attribute
     {
         public readonly int value;
 
-        /// <summary> Set <see cref="Ability.AbilityId"/> value of this ability when it is created in the inspector </summary>
-        /// <param name="value"> Value of ability value </param>
-        public DefaultAbilityId(int value)
+        /// <summary> Set <see cref="AgentBehaviour.ID"/> value of this behaviour when it is created in the inspector </summary>
+        /// <param name="value"> Value of behaviour value </param>
+        public DefaultId(int value)
         {
             this.value = value;
         }
     }
 
-    /// <summary> <see cref="Ability.TargetSpeed"/> of this ability when it is created in the inspector </summary>
+    /// <summary> <see cref="AgentBehaviour.MoveSpeedMultiplier"/> of this behaviour when it is created in the inspector </summary>
     [AttributeUsage(AttributeTargets.Class)]
-    public class DefaultMoveSpeed : Attribute
+    public class DefaultMoveSpeedMultiplier : Attribute
     {
         public float speed;
 
-        /// <summary> <see cref="Ability.TargetSpeed"/> of this ability when it is created in the inspector  </summary>
+        /// <summary> <see cref="AgentBehaviour.MoveSpeedMultiplier"/> of this behaviour when it is created in the inspector  </summary>
         /// <param name="value"> move speed </param>
-        public DefaultMoveSpeed(float value)
+        public DefaultMoveSpeedMultiplier(float value)
         {
             speed = value;
         }

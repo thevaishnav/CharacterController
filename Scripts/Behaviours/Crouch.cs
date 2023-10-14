@@ -2,13 +2,13 @@ using System;
 using CCN.Core;
 using UnityEngine;
 
-namespace CCN.Abilities
+namespace CCN.Behaviours
 {
-    /// <summary> Crouch ability for the player </summary>
+    /// <summary> Crouch behaviour for the Agent </summary>
     [Serializable]
-    [DefaultAbilityId(-1)]
+    [DefaultId(-1)]
     [StartStopProfileInfo(StartStopProfile.Behaviour.PressToToggle, StartStopProfile.TriggerType.GetKey, "", KeyCode.C)]
-    public class CrouchAbility : Ability
+    public class Crouch : AgentBehaviour
     {
     }
 }

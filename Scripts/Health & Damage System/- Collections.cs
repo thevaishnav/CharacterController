@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CCN.Health;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
@@ -7,55 +8,8 @@ using Random = UnityEngine.Random;
 using UnityEditor;
 #endif
 
-namespace CCN.Health.Collections
+namespace CCN.Collections
 {
-    public class Collection
-    {
-        public float[] array;
-
-        public Collection()
-        {
-            array = new float[1000];
-        }
-
-        public void SortFirstN(int n)
-        {
-            if (n < 0) return;
-            if (n >= array.Length) n = array.Length;
-
-            QuickSort(0, n - 1);
-        }
-
-        private void QuickSort(int low, int high)
-        {
-            // Base case: subarray has one or zero elements
-            if (low >= high) return;
-
-            // Choose a pivot element (here we use the last element)
-            float pivot = array[high];
-
-            // Partition the subarray around the pivot
-            int i = low; // value of smaller element
-            for (int j = low; j < high; j++)
-            {
-                // If current element is smaller than or equal to pivot
-                if (array[j] <= pivot)
-                {
-                    // Swap array[i] and array[j]
-                    (array[i], array[j]) = (array[j], array[i]);
-                    i++;
-                }
-            }
-
-            // Swap array[i] and array[high]
-            (array[i], array[high]) = (array[high], array[i]);
-
-            // Recursively sort the left and right partitions
-            QuickSort(low, i - 1);
-            QuickSort(i + 1, high);
-        }
-    }
-
 
     [Serializable]
     public abstract class Collection<T>
@@ -78,6 +32,23 @@ namespace CCN.Health.Collections
         public IEnumerable<T> Loop() => values;
     }
 
+    #if UNITY_EDITOR
+    [CustomPropertyDrawer(typeof(Collection<>), true)]
+    public class CollectionDrawer : PropertyDrawer
+    {
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            return EditorGUI.GetPropertyHeight(property.FindPropertyRelative("values"), true);
+        }
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            EditorGUI.PropertyField(position, property.FindPropertyRelative("values"), label, true);
+        }
+    }
+    #endif
+
+    
     [Serializable]
     public class HitBoxCollection : Collection<HitBox>
     {
@@ -283,20 +254,4 @@ namespace CCN.Health.Collections
         }
     }
 
-    
-    #if UNITY_EDITOR
-    [CustomPropertyDrawer(typeof(Collection<>), true)]
-    public class CollectionDrawer : PropertyDrawer
-    {
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-        {
-            return EditorGUI.GetPropertyHeight(property.FindPropertyRelative("values"), true);
-        }
-
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-        {
-            EditorGUI.PropertyField(position, property.FindPropertyRelative("values"), label, true);
-        }
-    }
-    #endif
 }
