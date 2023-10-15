@@ -1,5 +1,5 @@
 using System;
-using System.Reflection;
+using CCN.InputSystemWrapper;
 using UnityEngine;
 
 
@@ -10,7 +10,7 @@ namespace CCN.Core
     /// An behaviour is a state which (when active) controls the behaviour of the agent.
     /// </summary>
     [Serializable]
-    public abstract class AgentBehaviour : IStartStopProfileTarget
+    public abstract class AgentBehaviour : IInteractionProfileTarget
     {
         #region Field and Properties
         #if UNITY_EDITOR
@@ -18,66 +18,20 @@ namespace CCN.Core
         #endif
         
         [SerializeField, Tooltip("Unique identifier for this behaviour. When this behaviour is enabled, \"Behaviour ID\" in animator will be set to this parameter value. Positive for user defined behaviors, negative for built-in behaviors, 0 for no behavior")]
-        private int id;
+        protected int id;
         
         [SerializeField, Tooltip("Multiply movement speed of the agent when this behaviour is enabled.")]
-        private float moveSpeedMultiplier = 1f;
+        protected float moveSpeedMultiplier = 1f;
 
         [SerializeField, Tooltip("Profile to start/stop this behaviour.")] 
-        private StartStopProfile startStopProfile;
-
-        [SerializeField, Tooltip("Should this behaviour try to start in Awake")]
-        private bool tryStartInAwake;
+        protected InteractionProfileBase interactionProfile;
 
         /// <summary> Unique identifier for this behaviour. When this behaviour is enabled, \"Behaviour ID\" in animator will be set to this parameter value. Positive for user defined behaviors, negative for built-in behaviors, 0 for no behavior  </summary>
         public int ID => id;
-
-        
         
         /// <summary> Agent that is controlling this behaviour </summary>
         public Agent Agent { get; private set; }
         
-        /// <summary> Current Acceleration of the Agent </summary>
-        public Vector3 Acceleration => Agent.Acceleration;
-
-        /// <summary> Current Velocity of the Agent </summary>
-        public Vector3 Velocity => Agent.Velocity;
-
-        /// <summary> Current speed of the Agent </summary>
-        public float Speed => Agent.Speed;
-
-        /// <summary> Is Agent moving </summary>
-        public bool IsMoving => Agent.IsMoving;
-
-        /// <summary> Is Agent touching the ground </summary>
-        public bool IsGrounded => Agent.IsGrounded;
-
-        /// <summary> Variable synchronised across all the devices (connected by photon) </summary>
-        public int ManagedInt1 => Agent.ManagedInt1;
-
-        /// <summary> Variable synchronised across all the devices (connected by photon) </summary>
-        public int ManagedInt2 => Agent.ManagedInt2;
-
-        /// <summary> Variable synchronised across all the devices (connected by photon) </summary>
-        public float ManagedFloat1 => Agent.ManagedFloat1;
-
-        /// <summary> Variable synchronised across all the devices (connected by photon) </summary>
-        public float ManagedFloat2 => Agent.ManagedFloat2;
-
-        /// <summary> Mass used by physics system </summary>
-        public float Mass
-        {
-            get => Agent.mass;
-            set => Agent.mass = value;
-        }
-
-        /// <summary> Gravity used by physics system </summary>
-        public Vector3 Gravity
-        {
-            get => Agent.gravity;
-            set => Agent.gravity = value;
-        }
-
         /// <summary> What should be the movement speed of Agent when this behaviour is enabled. </summary>
         public float MoveSpeedMultiplier => moveSpeedMultiplier;
 
@@ -93,14 +47,9 @@ namespace CCN.Core
             Agent = agent;
             IsEnabled = false;
             
-            if (tryStartInAwake)
+            if (interactionProfile != null)
             {
-                Agent.TryEnableBehaviour(this);
-            }
-
-            if (startStopProfile != null)
-            {
-                startStopProfile.SetTarget(this);
+                interactionProfile.DoTarget(this, agent);
             }
             
             Agent.EvEnabled += OnAgentEnabled;
@@ -134,7 +83,6 @@ namespace CCN.Core
         /// <returns> true if the behaviour was disabled </returns>
         public bool TryDisable(bool force) => Agent.TryDisableBehavior(this, force);
         
-        
         /// <summary> Event callback to check if an behaviour can be enabled if this behaviour is enabled </summary>
         /// <param name="behaviourAboutToStart"> Behaviour that will be started if returned true </param>
         public virtual bool ShouldBlockBehaviorStart(AgentBehaviour behaviourAboutToStart) => false;
@@ -142,6 +90,13 @@ namespace CCN.Core
         /// <summary> Event callback to check if an behaviour can be disabled if this behaviour is enabled </summary>
         /// <param name="behaviourAboutToStop"> Behaviour that will be stoppped if returned true </param>
         public virtual bool ShouldBlockBehaviorStop(AgentBehaviour behaviourAboutToStop) => false;
+
+        /// <summary> Called when the behaviour is added in the inspector </summary>
+        /// <param name="agent"> Agent on which the behaviour is added </param>
+        protected virtual void Reset(Agent agent)
+        {
+            name = GetType().Name;
+        }
         
         /// <summary> Event callback when the Agent GameObject is enabled </summary>
         protected virtual void OnAgentEnabled()
@@ -162,33 +117,12 @@ namespace CCN.Core
         protected virtual void OnBehaviourDisabled()
         {
         }
-        
-        protected virtual void Reset(Agent agent)
-        {
-            // Assign Default values
-            Type type = GetType();
-            name = type.Name;
-            
-            DefaultId defId = type.GetCustomAttribute<DefaultId>();
-            if (defId != null)
-            {
-                id = defId.value;
-            }
+        #endregion
 
-            DefaultMoveSpeedMultiplier moveSpeedMultiplier = type.GetCustomAttribute<DefaultMoveSpeedMultiplier>();
-            if (moveSpeedMultiplier != null)
-            {
-                this.moveSpeedMultiplier = moveSpeedMultiplier.speed;
-            }
-            
-            StartStopProfileInfo profileInfo = type.GetCustomAttribute<StartStopProfileInfo>();
-            if (profileInfo != null)
-            {
-                startStopProfile = new GameObject($"{type.Name} Profile").AddComponent<StartStopProfile>();
-                startStopProfile.transform.SetParent(agent.transform);
-                startStopProfile.SetInfo(profileInfo);
-            }
-        }
+        #region Interaction Profile
+        bool IInteractionProfileTarget.IsInteracting(InteractionProfileBase profile) => IsEnabled;
+        void IInteractionProfileTarget.StartInteraction(InteractionProfileBase profile) => TryEnable();
+        void IInteractionProfileTarget.EndInteraction(InteractionProfileBase profile) => TryDisable();
         #endregion
     }
 }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using CCN.InputSystemWrapper;
+using JetBrains.Annotations;
 using UnityEngine;
 
 namespace CCN.Core
@@ -48,6 +50,9 @@ namespace CCN.Core
         [SerializeField, Tooltip("Agent Camera")]
         private Transform mCamera;
 
+        [SerializeField] private InteractionProfileBase horizontalMoveProfile;
+        [SerializeField] private InteractionProfileBase verticalMoveProfile;
+        
         [Header("Controls")] [SerializeField, Tooltip("Default Movement speed of the Agent")]
         private float defaultMoveSpeed = 5f;
 
@@ -77,6 +82,9 @@ namespace CCN.Core
 
         [SerializeReference, Tooltip("Behaviours this Agent has")]
         private AgentBehaviour[] behaviors;
+
+        [SerializeField] 
+        private AgentItem[] items; 
         #endregion
 
         #region Private Fields
@@ -86,7 +94,7 @@ namespace CCN.Core
         /// <summary> Animator handler, this object will handle all the animation parameters </summary>
         private AnimatorHandler _animatorHandler;
 
-        // private Dictionary<ItemSpot, Item> _equippedItems;
+        private Dictionary<ItemSpot, AgentItem> _equippedItems;
 
         /// <summary> Angle by which the Agent is rotated in this frame </summary>
         private Vector3 _frameRotDelta;
@@ -156,7 +164,7 @@ namespace CCN.Core
         public int BehaviourId => _animatorHandler.BehaviourId;
         #endregion
 
-        #region Unity Callback
+        #region Unity
         private void OnEnable() => EvEnabled?.Invoke();
         private void OnDisable() => EvDisabled?.Invoke();
         private void OnTriggerEnter(Collider other) => EvTriggerEntered?.Invoke(other);
@@ -165,20 +173,25 @@ namespace CCN.Core
         private void OnCollisionEnter(Collision collision) => EvCollisionEnter?.Invoke(collision);
         private void OnCollisionStay(Collision collision) => EvCollisionStay?.Invoke(collision);
         private void OnCollisionExit(Collision collision) => EvCollisionExit?.Invoke(collision);
-
+        
         private void Awake()
         {
             _moveSpeed = defaultMoveSpeed;
             _acceleration = Vector3.zero;
             _velocity = Vector3.zero;
             _animatorHandler = new AnimatorHandler(animator);
-            // _equippedItems = new Dictionary<ItemSpot, Item>();
+            _equippedItems = new Dictionary<ItemSpot, AgentItem>();
 
             foreach (AgentBehaviour behaviour in behaviors)
             {
                 behaviour.Init(this);
             }
 
+            foreach (AgentItem item in items)
+            {
+                item.Init(this);
+            }
+            
             UpdateMovementSpeed();
         }
 
@@ -219,7 +232,7 @@ namespace CCN.Core
             EvUpdate?.Invoke();
             MoveByInputs();
         }
-
+        
         private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.yellow;
@@ -278,7 +291,7 @@ namespace CCN.Core
         /// <summary> Move the Agent GameObject according to inputs bu user </summary>
         private void MoveByInputs()
         {
-            Vector3 direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
+            Vector3 direction = new Vector3(horizontalMoveProfile.GetAxisValue(), 0, verticalMoveProfile.GetAxisValue()).normalized;
 
             if (direction.sqrMagnitude > 0.1f)
             {
@@ -306,13 +319,13 @@ namespace CCN.Core
             _moveSpeed = defaultMoveSpeed;
             if (_currentBehaviour != null) _moveSpeed *= _currentBehaviour.MoveSpeedMultiplier;
 
-            /*foreach (KeyValuePair<ItemSpot, Item> pair in _equippedItems)
+            foreach (KeyValuePair<ItemSpot, AgentItem> pair in _equippedItems)
             {
                 if (pair.Value != null)
                 {
                     _moveSpeed *= pair.Value.MoveSpeedMultiplier;
                 }
-            }*/
+            }
         }
         #endregion
 
@@ -442,7 +455,7 @@ namespace CCN.Core
         }
         #endregion
 
-        /*#region Items
+        #region Items
         private IEnumerator ResetUseAnimatorParameter(int expectedValue)
         {
             yield return null;
@@ -453,62 +466,43 @@ namespace CCN.Core
             }
         }
 
-        private IEnumerator EquipItem(Item item1, Item item, bool force)
+        /// <summary> Unequip one item and equip another. </summary>
+        /// <remarks> Assumes that both belong to same spot</remarks>
+        private IEnumerator EquipItem([CanBeNull] AgentItem equip, [CanBeNull] AgentItem unequip)
         {
-            Item alreadyEquippedAtSpot;
-            if (force)
+            if (unequip != null)
             {
-                if (_equippedItems.TryGetValue(item.Spot, out alreadyEquippedAtSpot))
-                {
-                    if (alreadyEquippedAtSpot != null) alreadyEquippedAtSpot.OnUnequip();
-                    item.OnEquip();
-                    _equippedItems[item.Spot] = item;
-                }
-                else
-                {
-                    item.OnEquip();
-                    _equippedItems.Add(item.Spot, item);
-                }
-
-                UpdateMovementSpeed();
-                return true;
+                unequip.DoSetState(false);
+                _animatorHandler.EquippedItemId = -unequip.ID;
+                _equippedItems.Remove(unequip.Spot);
+                yield return new WaitForSeconds(unequip.UnequipAnimationDuration);
             }
 
-            if (_equippedItems.TryGetValue(item.Spot, out alreadyEquippedAtSpot))
+            if (equip != null)
             {
-                if (alreadyEquippedAtSpot != null && alreadyEquippedAtSpot.CanUnequip() == false) return false;
-
-                alreadyEquippedAtSpot.OnUnequip();
-                item.OnEquip();
-                _equippedItems[item.Spot] = item;
-
-                UpdateMovementSpeed();
-                return true;
+                equip.DoSetState(true);
+                _animatorHandler.EquippedItemId = equip.ID;
+                _equippedItems[equip.Spot] = equip;
+                yield return new WaitForSeconds(equip.EquipAnimationDuration);    
             }
-            else
-            {
-                item.OnEquip();
-                _equippedItems.Add(item.Spot, item);
-
-                UpdateMovementSpeed();
-                return true;
-            }
+            
+            _animatorHandler.EquippedItemId = 0;
         }
 
-        public Item GetItem(ItemSpot spot)
+        public AgentItem GetItem(ItemSpot spot)
         {
-            if (_equippedItems.TryGetValue(spot, out Item item)) return item;
+            if (_equippedItems.TryGetValue(spot, out AgentItem item)) return item;
             return null;
         }
 
-        public bool TryGetItem(ItemSpot spot, out Item item)
+        public bool TryGetItem(ItemSpot spot, out AgentItem item)
         {
             return _equippedItems.TryGetValue(spot, out item) && item != null;
         }
 
         public bool IsSpotOccupied(ItemSpot spot)
         {
-            return _equippedItems.TryGetValue(spot, out Item item) && item != null;
+            return _equippedItems.TryGetValue(spot, out AgentItem item) && item != null;
         }
         
         public bool IsSpotEmpty(ItemSpot spot)
@@ -516,46 +510,48 @@ namespace CCN.Core
             return !IsSpotOccupied(spot);
         }
         
-        /*public void SetItemActiveInner(Item item, bool value)
+        public bool TryEquipItem(AgentItem item, bool force = false)
         {
-            if (value)
-            {
-                _equippedItems[item.Spot] = item;
-                _animatorHandler.EquippedItemId = item.ID;
-                StartCoroutine(ResetUseAnimatorParameter(true, item.ID));
-            }
-            else
-            {
-                _equippedItems.Remove(item.Spot);
-                _animatorHandler.EquippedItemId = -item.ID;
-                StartCoroutine(ResetUseAnimatorParameter(true, -item.ID));
-            }
+            if (item == null) return false;
+            if (force == false && item.CanEquip() == false) return false;
+            
+            bool hasItem = TryGetItem(item.Spot, out AgentItem alreadyAtSpot);
+            if (force == false && hasItem && alreadyAtSpot.CanUnequip() == false) return false;
 
-            item.DoSetState(value);
-            UpdateMovementSpeed();
-        }#1#
-
-        public bool TryEquipItem(Item item, bool force = false)
-        {
-            _equippedItems.TryGetValue(item.Spot, out Item alreadyEquippedAtSpot);
-            StartCoroutine(EquipItem(item, alreadyEquippedAtSpot, force));
-            return force || alreadyEquippedAtSpot == null || alreadyEquippedAtSpot.CanUnequip();
-        }
-
-        public bool TryUnequipItem(Item item, bool force = false)
-        {
+            StartCoroutine(EquipItem(item, alreadyAtSpot));
             return true;
         }
 
-        public void UseItem(Item item)
+        public bool TryUnequipSpot(ItemSpot spot, bool force = false)
         {
-            if (item.IsEnabled && _equippedItems.TryGetValue(item.Spot, out Item equipped) && equipped == item)
-            {
-                item.OnUse();
-                _animatorHandler.UsingItemId = item.ID;
-                StartCoroutine(ResetUseAnimatorParameter(false, item.ID));
-            }
+            bool hasItem = TryGetItem(spot, out AgentItem item);
+            if (hasItem == false) return false;
+            if (force == false && item.CanUnequip() == false) return false;
+
+            StartCoroutine(EquipItem(null, item));
+            return true;
         }
-        #endregion*/
+        
+        public bool TryUnequipItem(AgentItem item, bool force = false)
+        {
+            bool hasItem = TryGetItem(item.Spot, out AgentItem alreadyAtSpot);
+            if (hasItem == false || item != alreadyAtSpot) return false;
+            if (force == false && item.CanUnequip() == false) return false;
+
+            StartCoroutine(EquipItem(null, alreadyAtSpot));
+            return true;
+        }
+
+        public void UseItem(AgentItem item)
+        {
+            if (item == null || item.IsEquipped == false) return;
+            if (_equippedItems.TryGetValue(item.Spot, out AgentItem equipped) == false) return;
+            if (equipped != item) return;
+            
+            item.Use();
+            _animatorHandler.UsingItemId = item.ID;
+            StartCoroutine(ResetUseAnimatorParameter(item.ID));
+        }
+        #endregion
     }
 }

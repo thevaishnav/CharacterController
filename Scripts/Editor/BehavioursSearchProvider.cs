@@ -12,7 +12,7 @@ public class BehavioursSearchProvider : ScriptableObject, ISearchWindowProvider
     private static List<Type> AllBehaviourClasses;
 
     public Action<Type> OnClose;
-    private static List<SearchTreeEntry> _treeEntries;
+    public Agent agent;
 
     static BehavioursSearchProvider()
     {
@@ -30,10 +30,9 @@ public class BehavioursSearchProvider : ScriptableObject, ISearchWindowProvider
         }
     }
 
-    public static async void RefreshBehavioursList(Agent agent)
+    public List<SearchTreeEntry> CreateSearchTree(SearchWindowContext context)
     {
-        await Task.Delay(10);
-        _treeEntries = new List<SearchTreeEntry>
+        var treeEntries = new List<SearchTreeEntry>
         {
             new SearchTreeGroupEntry(new GUIContent("Conditions"), 0)
         };
@@ -45,11 +44,11 @@ public class BehavioursSearchProvider : ScriptableObject, ISearchWindowProvider
             SearchTreeEntry item = new SearchTreeEntry(new GUIContent(type.Name));
             item.level = 1;
             item.userData = type;
-            _treeEntries.Add(item);
+            treeEntries.Add(item);
         }
-    }
 
-    public List<SearchTreeEntry> CreateSearchTree(SearchWindowContext context) => _treeEntries;
+        return treeEntries;
+    }
 
     public bool OnSelectEntry(SearchTreeEntry searchTreeEntry, SearchWindowContext context)
     {

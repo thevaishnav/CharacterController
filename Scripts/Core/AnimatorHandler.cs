@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+// ReSharper disable InconsistentNaming
 
 namespace CCN.Core
 {
@@ -8,17 +9,16 @@ namespace CCN.Core
         #region Statics
         public static readonly float MinMoveSpeed = 0.005f;
         public static readonly float SqreMinMoveSpeed = MinMoveSpeed * MinMoveSpeed;
-        
-        private static readonly int ID_BehaviourId = Animator.StringToHash("Behaviour ID");
-        private static readonly int ID_EquippedId = Animator.StringToHash("Equipped Item ID");
-        private static readonly int ID_UsingEquipped = Animator.StringToHash("Using Item ID");
         private static readonly int ID_Speed = Animator.StringToHash("Speed");
         private static readonly int ID_IsMoving = Animator.StringToHash("Moving");
         private static readonly int ID_IsGrounded = Animator.StringToHash("Grounded");
-        private static readonly int ID_ManagedFloat1 = Animator.StringToHash("ManagedFloat1");
-        private static readonly int ID_ManagedFloat2 = Animator.StringToHash("ManagedFloat2");
+        private static readonly int ID_BehaviourId = Animator.StringToHash("Behaviour ID");
+        private static readonly int ID_UsingEquipped = Animator.StringToHash("Using Item ID");
+        private static readonly int ID_EquippedId = Animator.StringToHash("Equipped Item ID");
         private static readonly int ID_ManagedInt1 = Animator.StringToHash("ManagedInt1");
         private static readonly int ID_ManagedInt2 = Animator.StringToHash("ManagedInt2");
+        private static readonly int ID_ManagedFloat1 = Animator.StringToHash("ManagedFloat1");
+        private static readonly int ID_ManagedFloat2 = Animator.StringToHash("ManagedFloat2");
         #endregion
 
         #region Fields and Properties
@@ -32,20 +32,9 @@ namespace CCN.Core
         private float _managedFloat1;
         private float _managedFloat2;
         private readonly Animator _animator;
-        
-        
+
         /// <summary> Is the Agent moving </summary>
         public bool IsMoving { get; private set; }
-
-        public int UsingItemId
-        {
-            get => _usingItemId;
-            set
-            {
-                _animator.SetInteger(ID_UsingEquipped, value);
-                _usingItemId = value;
-            }
-        }
 
         /// <summary> Is the Agent touching the ground </summary>
         public bool IsGrounded
@@ -91,7 +80,11 @@ namespace CCN.Core
                 _behaviourId = value;
             }
         }
-
+        
+        /// <summary>
+        /// ID of currently equipped ID.
+        /// This will be set for 2 frames only. Because multiple items can be enabled at once.
+        /// </summary>
         public int EquippedItemId
         {
             get => _equippedItemId;
@@ -101,7 +94,20 @@ namespace CCN.Core
                 _equippedItemId = value;
             }
         }
-
+        
+        /// <summary>
+        ///  ID of currently equipped ID.
+        /// This will be set for 2 frames only. Because multiple items can be enabled at once.
+        /// </summary>
+        public int UsingItemId
+        {
+            get => _usingItemId;
+            set
+            {
+                _animator.SetInteger(ID_UsingEquipped, value);
+                _usingItemId = value;
+            }
+        }
         
         /// <summary> Variable synchronised across all the devices (connected by photon) </summary>
         public int ManagedInt1
@@ -146,8 +152,8 @@ namespace CCN.Core
                 _managedFloat2 = value;
             }
         }
-
         #endregion
+        
         public AnimatorHandler(Animator animator)
         {
             _animator = animator;

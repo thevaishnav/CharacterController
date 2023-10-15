@@ -9,7 +9,8 @@ using UnityEngine;
 [CustomEditor(typeof(Agent))]
 public class AgentEditor : Editor
 {
-    private const BindingFlags BindingFlags = System.Reflection.BindingFlags.Default | System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.DeclaredOnly | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.FlattenHierarchy | System.Reflection.BindingFlags.InvokeMethod | System.Reflection.BindingFlags.CreateInstance | System.Reflection.BindingFlags.GetField | System.Reflection.BindingFlags.SetField | System.Reflection.BindingFlags.GetProperty | System.Reflection.BindingFlags.SetProperty | System.Reflection.BindingFlags.PutDispProperty | System.Reflection.BindingFlags.PutRefDispProperty | System.Reflection.BindingFlags.ExactBinding | System.Reflection.BindingFlags.SuppressChangeType | System.Reflection.BindingFlags.OptionalParamBinding | System.Reflection.BindingFlags.IgnoreReturn;
+    private const BindingFlags BINDING_FLAGS = BindingFlags.Default | BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.InvokeMethod | BindingFlags.CreateInstance | BindingFlags.GetField | BindingFlags.SetField | BindingFlags.GetProperty | BindingFlags.SetProperty | BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty | BindingFlags.ExactBinding | BindingFlags.SuppressChangeType | BindingFlags.OptionalParamBinding | BindingFlags.IgnoreReturn;
+
     private static readonly Type TypeOfBehaviour = typeof(AgentBehaviour);
     private Agent _agent;
     private SerializedProperty _abilities;
@@ -18,28 +19,24 @@ public class AgentEditor : Editor
     {
         _agent = (Agent)target;
         _abilities = serializedObject.FindProperty("behaviors");
-        BehavioursSearchProvider.RefreshBehavioursList(_agent);
     }
 
     public override void OnInspectorGUI()
     {
         EditorGUI.BeginChangeCheck();
         DrawDefaultInspector();
-        RemoveEmptyAbilities();
-        if (EditorGUI.EndChangeCheck())
-        {
-            BehavioursSearchProvider.RefreshBehavioursList(_agent);
-        }
+        RemoveEmptyBehaviour();
+        if (EditorGUI.EndChangeCheck()) serializedObject.ApplyModifiedProperties();
     }
 
     private static void CallMethod(Type type, object obj, string methodName, params object[] options)
     {
-        MethodInfo methodInfo = type.GetMethod(methodName, BindingFlags);
+        MethodInfo methodInfo = type.GetMethod(methodName, BINDING_FLAGS);
         if (methodInfo == null) Debug.LogError($"Method {methodName} not found");
         else methodInfo?.Invoke(obj, options);
     }
 
-    private void RemoveEmptyAbilities()
+    private void RemoveEmptyBehaviour()
     {
         for (int i = 0; i < _abilities.arraySize; i++)
         {
@@ -50,24 +47,23 @@ public class AgentEditor : Editor
                 serializedObject.ApplyModifiedProperties();
                 
                 BehavioursSearchProvider current = CreateInstance<BehavioursSearchProvider>();
-                current.OnClose = SetPropertyAbilityType;
+                current.agent = _agent;
+                current.OnClose = SetPropertyBehaviourType;
                 SearchWindow.Open(new SearchWindowContext(GUIUtility.GUIToScreenPoint(Event.current.mousePosition)), current);
                 return;
             }
         }
     }
 
-    private void SetPropertyAbilityType(Type abilityType)
+    private void SetPropertyBehaviourType(Type type)
     {
-        if (_agent.HasBehavior(abilityType))
+        if (_agent.HasBehavior(type))
         {
-            EditorUtility.DisplayDialog("Invalid", $"Behaviour of type {abilityType.Name} is already added to agent {_agent.gameObject}", "Okay");
+            EditorUtility.DisplayDialog("Invalid", $"Behaviour of type {type.Name} is already added to agent {_agent.gameObject}", "Okay");
             return;
         }
-
-        AgentBehaviour behaviour = (AgentBehaviour)Activator.CreateInstance(abilityType);
+        AgentBehaviour behaviour = (AgentBehaviour)Activator.CreateInstance(type);
         CallMethod(TypeOfBehaviour, behaviour, "Reset", _agent);
-
         if (Application.isPlaying)
         {
             CallMethod(TypeOfBehaviour, behaviour, "Init", _agent);
