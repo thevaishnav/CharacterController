@@ -41,7 +41,8 @@ public class AgentEditor : Editor
         for (int i = 0; i < _abilities.arraySize; i++)
         {
             SerializedProperty behaviour = _abilities.GetArrayElementAtIndex(i);
-            if (behaviour.managedReferenceValue == null)
+            // Debug.Log($"{i} => <{behaviour.managedReferenceFullTypename}>");
+            if (string.IsNullOrEmpty(behaviour.managedReferenceFullTypename))
             {
                 _abilities.DeleteArrayElementAtIndex(i);
                 serializedObject.ApplyModifiedProperties();

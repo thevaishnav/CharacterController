@@ -12,11 +12,12 @@ public class InteractionProfileEditor : Editor
     private static readonly GUIContent ContentPCMode = new GUIContent("Mode");
     private static readonly GUIContent ContentPCInputType = new GUIContent("Input Type");
     private static readonly GUIContent ContentPCButtonName = new GUIContent("Button Name", "Name of Button for Input.GetButton method");
-    private static readonly GUIContent ContentPCAxisName = new GUIContent("Axis Name", "Name of the Axis for Input.GetAxis method");
+    private static readonly GUIContent ContentPCAxisNameHorizontal = new GUIContent("Horizontal Axis Name", "Name of the Axis for Input.GetAxis method");
+    private static readonly GUIContent ContentPCAxisNameVertical = new GUIContent("Vertical Axis Name", "Name of the Axis for Input.GetAxis method");
     private static readonly GUIContent ContentPCAxisThreshold = new GUIContent("Tolerance", "Max deviation (from 0) that can be ignored");
     private static readonly GUIContent ContentPCKeycode = new GUIContent("Keycode", "Keycode for Input.GetKey method");
     private static readonly GUIContent ContentUIMode = new GUIContent("Mode");
-    private static readonly GUIContent ContentUIAxisIntensity = new GUIContent("Max deviation", "Max value for axis");
+    private static readonly GUIContent ContentUIAxisIntensity = new GUIContent("Intensity", "Max value for axis");
     private static readonly GUIContent ContentUIAxisThreshold = new GUIContent("Tolerance", "Max deviation (from 0) that can be ignored");
 
 
@@ -24,6 +25,7 @@ public class InteractionProfileEditor : Editor
     private SerializedProperty _pcMode;
     private SerializedProperty _pcInputType;
     private SerializedProperty _pcTriggerName;
+    private SerializedProperty _pcTriggerName2;
     private SerializedProperty _pcAxisThreshold;
     private SerializedProperty _pcKeycode;
     private SerializedProperty _uiMode;
@@ -39,6 +41,7 @@ public class InteractionProfileEditor : Editor
         _pcMode = serializedObject.FindProperty("pcMode");
         _pcInputType = serializedObject.FindProperty("pcInputType");
         _pcTriggerName = serializedObject.FindProperty("pcTriggerName");
+        _pcTriggerName2 = serializedObject.FindProperty("pcTriggerName2");
         _pcAxisThreshold = serializedObject.FindProperty("pcAxisThreshold");
         _pcKeycode = serializedObject.FindProperty("pcKeycode");
         _uiMode = serializedObject.FindProperty("uiMode");
@@ -101,7 +104,8 @@ public class InteractionProfileEditor : Editor
                     EditorGUILayout.PropertyField(_pcTriggerName, ContentPCButtonName);
                     break;
                 case 2:
-                    EditorGUILayout.PropertyField(_pcTriggerName, ContentPCAxisName);
+                    EditorGUILayout.PropertyField(_pcTriggerName, ContentPCAxisNameHorizontal);
+                    EditorGUILayout.PropertyField(_pcTriggerName2, ContentPCAxisNameVertical);
                     EditorGUILayout.PropertyField(_pcAxisThreshold, ContentPCAxisThreshold);
                     break;
             }
