@@ -122,9 +122,27 @@ namespace CCN.Core
         #endregion
 
         #region Interaction Profile
-        bool IInteractionProfileTarget.IsInteracting(InteractionProfileBase profile) => IsEnabled;
-        void IInteractionProfileTarget.StartInteraction(InteractionProfileBase profile) => TryEnable();
-        void IInteractionProfileTarget.EndInteraction(InteractionProfileBase profile) => TryDisable();
+        /// <summary> In-case if the child class has its own interaction profile </summary>
+        /// <returns> true if this item is interacting with respect to given profile </returns>
+        protected virtual bool IsInteractingWithProfile(InteractionProfileBase profile) => IsEnabled;
+        
+        /// <summary> In-case if the child class has its own interaction profile </summary>
+        /// <returns>
+        /// true if the profile belongs to parent class interaction.
+        /// So if parent class method returns true, child classes can simply exit out of function.
+        /// </returns>
+        protected virtual bool StartInteractionWithProfile(InteractionProfileBase profile) => TryEnable();
+        
+        /// <summary> In-case if the child class has its own interaction profile </summary>
+        /// <returns>
+        /// true if the profile belongs to parent class interaction.
+        /// So if parent class method returns true, child classes can simply exit out of function.
+        /// </returns>
+        protected virtual bool EndInteractionWithProfile(InteractionProfileBase profile) => TryDisable();
+        
+        bool IInteractionProfileTarget.IsInteracting(InteractionProfileBase profile) => IsInteractingWithProfile(profile);
+        void IInteractionProfileTarget.StartInteraction(InteractionProfileBase profile) => StartInteractionWithProfile(profile);
+        void IInteractionProfileTarget.EndInteraction(InteractionProfileBase profile) => EndInteractionWithProfile(profile);
         #endregion
     }
 }

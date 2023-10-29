@@ -150,17 +150,11 @@ namespace CCN.InputSystemWrapper
         {
             if (target.IsInteracting(this))
             {
-                if (shouldStopCheck())
-                {
-                    target.EndInteraction(this);
-                }
+                if (shouldStopCheck()) target.EndInteraction(this);
             }
             else
             {
-                if (shouldStartCheck())
-                {
-                    target.StartInteraction(this);
-                }
+                if (shouldStartCheck()) target.StartInteraction(this);
             }
         }
     }

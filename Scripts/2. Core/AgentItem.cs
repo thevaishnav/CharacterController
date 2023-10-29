@@ -25,7 +25,7 @@ namespace CCN.Core
 
     /// <summary>
     /// Base class for all items.
-    /// This item will be enabled only while its equipped.
+    /// This item will be enabled only while its equipped. (Unless the end user enables it by code)
     /// </summary>
     public abstract class AgentItem : MonoBehaviour, IInteractionProfileTarget
     {
@@ -42,6 +42,10 @@ namespace CCN.Core
 
         [SerializeField, Tooltip("Profile to equip/unequip this behaviour.")]
         protected InteractionProfileBase useProfile;
+
+        [SerializeField, Tooltip("Can be null. GameObject that will be active only when this item is equipped.")]
+        protected GameObject activateWithItem;
+
         
         [SerializeField, Tooltip("Multiply movement speed of the agent when this item is equipped.")]
         protected float moveSpeedMultiplier = 1f;
@@ -59,7 +63,18 @@ namespace CCN.Core
         public Agent Agent { get; private set; }
 
         /// <summary> Is this item equipped </summary>
-        public bool IsEquipped { get; private set; }
+        public bool IsEquipped
+        {
+            get => enabled;
+            private set
+            {
+                if (activateWithItem != null) activateWithItem.SetActive(value);
+                enabled = value;
+            }
+        }
+
+        /// <summary> Is this item equipped </summary>
+        public bool IsUsing { get; private set; }
         
         /// <summary> Unique identifier for this item. </summary>
         public int ID => id;
@@ -78,82 +93,140 @@ namespace CCN.Core
         #endregion
 
         #region Abstract
+        /// <summary> Callback when item is equipped </summary>
+        protected abstract void Equip();
+
+        /// <summary> Callback when item is unequipped </summary>
+        protected abstract void Unequip();
+
         /// <summary> Use this item </summary>
-        public abstract void Use();
+        protected abstract void StartUse();
+        
+        /// <summary> Use this item </summary>
+        protected abstract void StopUse();
         #endregion
 
         #region Funcionalities
-        internal void Init(Agent agent)
+        public virtual void Init(Agent agent)
         {
             Agent = agent;
+            IsEquipped = false;
             if(equipmentProfile) equipmentProfile.DoTarget(this, agent);
             if(useProfile) useProfile.DoTarget(this, agent);
         }
-
-        /// <summary> if value: Equip,  else Unequip  </summary>
-        internal void DoSetState(bool value)
+        
+        /// <returns> true if the item was equipped </returns>
+        public bool TryEquip()
         {
-            IsEquipped = value;
-            if (value)
-            {
-                OnEquip();
-                if (autoUseWhenEquipped) Agent.UseItem(this);
-            }
-            else
-            {
-                OnUnequip();
-            }
+            if (Agent.TryEquipItem(this) == false) return false;
+
+            IsEquipped = true;
+            Equip();
+            if (autoUseWhenEquipped) TryStartUse();
+            return true;
         }
 
-        /// <returns> true if the item was equipped </returns>
-        public bool TryEquip() => Agent.TryEquipItem(this);
-
         /// <returns> true if the item was unequipped </returns>
-        public bool TryUnequip() => Agent.TryUnequipItem(this);
+        public bool TryUnequip()
+        {
+            if (Agent.TryUnequipItem(this) == false) return false;
+            if (IsUsing) TryStopUse();
+
+            IsEquipped = false;
+            Unequip();
+            return true;
+        }
 
         /// <summary> Use this item if its equipped. </summary>
-        public void TryUse() => Agent.UseItem(this);
+        public bool TryStartUse()
+        {
+            if (Agent.StartItemUse(this) == false) return false;
+            
+            IsUsing = true;
+            StartUse();
+            return true;
+        }
+
+        /// <summary> Use this item if its equipped. </summary>
+        public bool TryStopUse()
+        {
+            if (Agent.StopItemUse(this) == false) return false;
+
+            IsUsing = false;
+            StopUse();
+            return true;
+        }
         #endregion
 
         #region Virtual Members
-        /// <returns> true if item is being used </returns>
-        public virtual bool IsUsing() => false;
-        
+        protected virtual void Awake()
+        {
+            enabled = false;
+        }
+
         /// <returns> true if item can be equipped </returns>
         public virtual bool CanEquip() => !IsEquipped;
 
         /// <returns> true if item can be unequipped </returns>
         public virtual bool CanUnequip() => IsEquipped;
-
-        /// <summary> Callback when item is equipped </summary>
-        protected virtual void OnEquip()
-        {
-        }
-
-        /// <summary> Callback when item is unequipped </summary>
-        protected virtual void OnUnequip()
-        {
-        }
         #endregion
 
         #region Interaction Profile
-        bool IInteractionProfileTarget.IsInteracting(InteractionProfileBase profile)
+        /// <summary> In-case if the child class has its own interaction profile </summary>
+        /// <returns> true if this item is interacting with respect to given profile </returns>
+        protected virtual bool IsInteractingWithProfile(InteractionProfileBase profile)
         {
             if (profile == equipmentProfile) return IsEquipped;
-            else if (profile == useProfile) return IsUsing();
-            else return false;
+            if (profile == useProfile) return IsUsing;
+            return false;
         }
 
-        void IInteractionProfileTarget.StartInteraction(InteractionProfileBase profile)
+        /// <summary> In-case if the child class has its own interaction profile </summary>
+        /// <returns>
+        /// true if the profile belongs to parent class interaction.
+        /// So if parent class method returns true, child classes can simply exit out of function.
+        /// </returns>
+        protected virtual bool StartInteractionWithProfile(InteractionProfileBase profile)
         {
-            if (profile == equipmentProfile) TryEquip();
-            else if (profile == useProfile) TryUse();
+            if (profile == equipmentProfile)
+            {
+                TryEquip();
+                return true;
+            }
+
+            if (profile == useProfile)
+            {
+                TryStartUse();
+                return true;
+            }
+            return false;
         }
 
-        void IInteractionProfileTarget.EndInteraction(InteractionProfileBase profile)
+        /// <summary> In-case if the child class has its own interaction profile </summary>
+        /// <returns>
+        /// true if the profile belongs to parent class interaction.
+        /// So if parent class method returns true, child classes can simply exit out of function.
+        /// </returns>
+        protected virtual bool EndInteractionWithProfile(InteractionProfileBase profile)
         {
-            if (profile == equipmentProfile) TryUnequip();
+            if (profile == equipmentProfile)
+            {
+                TryUnequip();
+                return true;
+            }
+
+            if (profile == useProfile)
+            {
+                TryStopUse();
+                return true;
+            }
+            return false;
         }
+        
+        
+        bool IInteractionProfileTarget.IsInteracting(InteractionProfileBase profile) => IsInteractingWithProfile(profile);
+        void IInteractionProfileTarget.StartInteraction(InteractionProfileBase profile) => StartInteractionWithProfile(profile);
+        void IInteractionProfileTarget.EndInteraction(InteractionProfileBase profile) => EndInteractionWithProfile(profile);
         #endregion
     }
 }

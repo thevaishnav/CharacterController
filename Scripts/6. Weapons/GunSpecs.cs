@@ -1,17 +1,38 @@
-﻿using UnityEngine;
+﻿using CCN.InputSystemWrapper;
+using UnityEngine;
 
 namespace CCN.Health
 {
     [CreateAssetMenu(menuName = "CCN/Gun Specs", fileName = "Gun Specs")]
     public class GunSpecs : ScriptableObject
     {
+        #region Used by Editor
         #if UNITY_EDITOR
         private float damageDistance;
         private float damageAmount => distanceToDamageCurve.Evaluate(damageDistance);
+
         private float spredDistance;
-        private float spredAmount => distanceToDamageCurve.Evaluate(damageDistance);
+        private float spredAmount => distanceToSpreadCurve.Evaluate(spredDistance);
         #endif
+        #endregion
+
+        [Tooltip("Backward force experienced by player when the gun is fired")]
+        public float recoilForce;
         
+        [Tooltip("How much time it takes (in sec) to fire 1 shot.")]
+        public float fireDuration;
+
+        [Tooltip("How much time it takes (in sec) to reload once")]
+        public float reloadDuration;
+
+        [Tooltip("<= 0, means no reloading")] 
+        public int magazineSize;
+        
+        [Tooltip("Should the gun automatically reload when the mag runs out..")]
+        public bool autoReload;
+
+        [Tooltip("Choose how the reloading should be handled")]
+        public GunReloadType reloadType;
         
         [Tooltip("Animation curve to convert distance of hit-point from gun (time axis of curve) to damage (value axis of curve). \nPro Tip: You can right click the key.")]
         public AnimationCurve distanceToDamageCurve;
@@ -21,20 +42,6 @@ namespace CCN.Health
 
         [Tooltip("How much further (on top of spread curve value) to spread the shot based on character move speed. <=0 values means don't account for move speed.")]
         public float speedInfluenceOnSpread;
-
-        [Tooltip("Backward force experienced by player when the gun is fired")]
-        public float recoilForce;
-
-        public GunReloadType reloadType;
-
-        [Tooltip("<= 0, means no reloading")] 
-        public int magazineSize;
-
-        [Tooltip("How much time it takes (in sec) to fire 1 shot.")]
-        public float fireDuration;
-
-        [Tooltip("How much time it takes (in sec) to reload once")]
-        public float reloadDuration;
 
 
         protected virtual void Reset()

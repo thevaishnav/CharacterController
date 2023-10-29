@@ -83,7 +83,7 @@ namespace CCN.Core
         private AgentBehaviour[] behaviors;
 
         [SerializeField] 
-        private AgentItem[] items; 
+        private List<AgentItem> items; 
         #endregion
 
         #region Private Fields
@@ -291,14 +291,19 @@ namespace CCN.Core
         private void MoveByInputs()
         {
             Vector2 d = moveProfile.GetAxisValue();
-            if (d.sqrMagnitude > 0.1f)
+
+            float targetAngle = Mathf.Atan2(d.x, d.y) * Mathf.Rad2Deg;
+            if (rotateAgentWithCamera)
             {
-                float targetAngle = Mathf.Atan2(d.x, d.y) * Mathf.Rad2Deg;
                 if (rotateAgentWithCamera) targetAngle += mCamera.eulerAngles.y;
                 
                 float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref _turnSmoothVelocity, turnTime);
                 transform.rotation = Quaternion.Euler(0f, angle, 0f);
-
+            }
+            
+            
+            if (d.sqrMagnitude > 0.1f)
+            {
                 Vector3 move = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward * _moveSpeed;
                 _velocity.x = move.x;
                 _velocity.z = move.z;
@@ -454,67 +459,110 @@ namespace CCN.Core
         #endregion
 
         #region Items
-        private IEnumerator ResetUseAnimatorParameter(int expectedValue)
-        {
-            yield return null;
-            yield return null;
-            if (_animatorHandler.UsingItemId == expectedValue)
-            {
-                _animatorHandler.UsingItemId = 0;
-            }
-        }
-
+       
         /// <summary> Unequip one item and equip another. </summary>
         /// <remarks> Assumes that both belong to same slot</remarks>
         private IEnumerator EquipItem([CanBeNull] AgentItem equip, [CanBeNull] AgentItem unequip)
         {
             if (unequip != null)
             {
-                unequip.DoSetState(false);
                 _animatorHandler.EquippedItemId = -unequip.ID;
                 _equippedItems.Remove(unequip.Slot);
-                yield return new WaitForSeconds(unequip.UnequipAnimationDuration);
+                if (unequip.UnequipAnimationDuration >= 0.001f) yield return new WaitForSeconds(unequip.UnequipAnimationDuration);
             }
 
             if (equip != null)
             {
-                equip.DoSetState(true);
                 _animatorHandler.EquippedItemId = equip.ID;
                 _equippedItems[equip.Slot] = equip;
-                yield return new WaitForSeconds(equip.EquipAnimationDuration);    
+                if (equip.EquipAnimationDuration >= 0.001f) yield return new WaitForSeconds(equip.EquipAnimationDuration);    
             }
-            
             _animatorHandler.EquippedItemId = 0;
         }
 
-        public AgentItem GetItem(ItemSlot slot)
+        public void RegisterItem(AgentItem item)
+        {
+            item.enabled = false;
+            items.Add(item);
+        }
+
+        public IEnumerable<AgentItem> GetAllItemsForSlot(ItemSlot slot)
+        {
+            foreach (AgentItem item in items)
+            {
+                if (item == null) continue;
+                if (item.Slot == slot)
+                {
+                    yield return null;
+                }
+            }
+            yield break;
+        }
+
+        public bool TryGetItem(ItemSlot slot, Type type, out AgentItem item)
+        {
+            foreach (AgentItem tempItem in GetAllItemsForSlot(slot))
+            {
+                if (tempItem.GetType() == type)
+                {
+                    item = tempItem;
+                    return true;
+                }
+            }
+
+            item = null;
+            return false;
+        }
+
+        public bool TryGetItem<T>(ItemSlot slot, out T item)
+        where T : AgentItem
+        {
+            Type type = typeof(T);
+            foreach (AgentItem tempItem in GetAllItemsForSlot(slot))
+            {
+                if (tempItem.GetType() == type)
+                {
+                    item = tempItem as T;
+                    return item != null;
+                }
+            }
+
+            item = null;
+            return false;
+        }
+        
+        [CanBeNull]
+        public AgentItem GetEquippedItem(ItemSlot slot)
         {
             if (_equippedItems.TryGetValue(slot, out AgentItem item)) return item;
             return null;
         }
 
-        public bool TryGetItem(ItemSlot slot, out AgentItem item)
+        public bool TryGetEquippedItem(ItemSlot slot, out AgentItem item)
         {
             return _equippedItems.TryGetValue(slot, out item) && item != null;
         }
 
         public bool IsSpotOccupied(ItemSlot slot)
         {
-            return _equippedItems.TryGetValue(slot, out AgentItem item) && item != null;
+            return TryGetEquippedItem(slot, out AgentItem _);
         }
         
         public bool IsSpotEmpty(ItemSlot slot)
         {
-            return !IsSpotOccupied(slot);
+            return !TryGetEquippedItem(slot, out AgentItem _);
         }
         
         public bool TryEquipItem(AgentItem item, bool force = false)
         {
             if (item == null) return false;
             if (force == false && item.CanEquip() == false) return false;
-            
-            bool hasItem = TryGetItem(item.Slot, out AgentItem alreadyAtSpot);
-            if (force == false && hasItem && alreadyAtSpot.CanUnequip() == false) return false;
+
+            bool hasItem = TryGetEquippedItem(item.Slot, out AgentItem alreadyAtSpot);
+            if (force == false && hasItem && alreadyAtSpot.CanUnequip() == false)
+            {
+                return false;
+            }
 
             StartCoroutine(EquipItem(item, alreadyAtSpot));
             return true;
@@ -522,7 +570,7 @@ namespace CCN.Core
 
         public bool TryUnequipSpot(ItemSlot slot, bool force = false)
         {
-            bool hasItem = TryGetItem(slot, out AgentItem item);
+            bool hasItem = TryGetEquippedItem(slot, out AgentItem item);
             if (hasItem == false) return false;
             if (force == false && item.CanUnequip() == false) return false;
 
@@ -532,7 +580,7 @@ namespace CCN.Core
         
         public bool TryUnequipItem(AgentItem item, bool force = false)
         {
-            bool hasItem = TryGetItem(item.Slot, out AgentItem alreadyAtSpot);
+            bool hasItem = TryGetEquippedItem(item.Slot, out AgentItem alreadyAtSpot);
             if (hasItem == false || item != alreadyAtSpot) return false;
             if (force == false && item.CanUnequip() == false) return false;
 
@@ -540,15 +588,27 @@ namespace CCN.Core
             return true;
         }
 
-        public void UseItem(AgentItem item)
+        public bool StartItemUse(AgentItem item)
         {
-            if (item == null || item.IsEquipped == false) return;
-            if (_equippedItems.TryGetValue(item.Slot, out AgentItem equipped) == false) return;
-            if (equipped != item) return;
+            if (item == null || item.IsEquipped == false) return false;
+            if (_equippedItems.TryGetValue(item.Slot, out AgentItem equipped) == false) return false;
+            if (equipped != item) return false;
             
-            item.Use();
             _animatorHandler.UsingItemId = item.ID;
-            StartCoroutine(ResetUseAnimatorParameter(item.ID));
+            return true;
+        }
+        
+        public bool StopItemUse(AgentItem item)
+        {
+            if (item == null || item.IsEquipped == false) return false;
+            if (_equippedItems.TryGetValue(item.Slot, out AgentItem equipped) == false) return false;
+            if (equipped != item) return false;
+
+            if (_animatorHandler.UsingItemId == item.ID)
+            {
+                _animatorHandler.UsingItemId = 0;
+            } 
+            return true;
         }
         #endregion
     }
