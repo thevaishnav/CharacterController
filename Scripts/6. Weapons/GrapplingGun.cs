@@ -5,70 +5,79 @@ namespace CCN.Weapon
 {
     public class GrapplingGun : AgentItem
     {
-        [SerializeField] private LineRenderer lineRenderer;
-        [SerializeField] private Transform gunTip;
+        [SerializeField] private LineRenderer ropeRenderer;
+        [SerializeField] private Transform nozzle;
+        [SerializeField] private Transform cameraTransform;
         [SerializeField] private LayerMask whatIsGrappleable;
-        [SerializeField] private Joint joint;
         [SerializeField] private float range = 100f;
-
+        [SerializeField] private float initialForce = 10f;
+        [SerializeField] private float persistantForce = -10f;
 
         private RaycastHit _hit;
-
-        private void Reset()
-        {
-            lineRenderer = GetComponent<LineRenderer>();
-        }
+        private Rigidbody _currentTarget;
+        private Vector3 _lastNozzlePos;
+        private Vector3 _currentNozzlePos;
 
         protected override void Awake()
         {
             base.Awake();
-            lineRenderer.enabled = false;
-            lineRenderer.positionCount = 2;
-        }
-        
-        private void Update()
-        {
-            DrawRope();
+            ropeRenderer.enabled = false;
+            ropeRenderer.positionCount = 2;
         }
 
-        private void DrawRope()
+        private void FixedUpdate()
         {
-            if (IsUsing == false)
+            AddForceOnTarget(persistantForce);
+        }
+
+        private void LateUpdate()
+        {
+            // Draw Rope
+            if (IsUsing && _currentTarget != null)
             {
-               Debug.DrawRay(gunTip.position, gunTip.forward, Color.red);
-                return;
+                ropeRenderer.SetPosition(0, nozzle.position);
+                ropeRenderer.SetPosition(1, _currentTarget.transform.position);
             }
-            if (joint.connectedBody == null) return;
-            
-            lineRenderer.SetPosition(0, gunTip.position);
-            lineRenderer.SetPosition(1, joint.connectedBody.position);
         }
-
 
         protected override void Equip()
         {
-            
         }
 
         protected override void Unequip()
         {
         }
-
+        
         protected override void StartUse()
         {
-            if (!Physics.Raycast(gunTip.position, gunTip.forward, out _hit, range, whatIsGrappleable)) return;
-            
-            joint.connectedBody = _hit.rigidbody;
-            joint.autoConfigureConnectedAnchor = false;
-            joint.connectedAnchor = _hit.point;
+            if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out _hit, range, whatIsGrappleable))
+            {
+                _currentTarget = _hit.rigidbody;
+                ropeRenderer.enabled = true;
+                AddForceOnTarget(initialForce);
+            }
+            else
+            {
+                ropeRenderer.enabled = true;
+                TryStopUse();
+            }
+        }
 
-            lineRenderer.enabled = true;
+        private void AddForceOnTarget(float multiplier)
+        {
+            if (!IsUsing || _currentTarget == null) return;
+
+            Vector3 force = (transform.position - _currentTarget.position) * multiplier;
+            _currentNozzlePos = nozzle.position;
+            if (_currentNozzlePos != _lastNozzlePos) force = Quaternion.Euler((_currentNozzlePos - _lastNozzlePos).normalized) * force;
+            _currentTarget.AddForce(force);
+            _lastNozzlePos = _currentNozzlePos;
         }
 
         protected override void StopUse()
         {
-            lineRenderer.enabled = false;
-            joint.connectedBody = null;
+            _currentTarget = null;
+            ropeRenderer.enabled = false;
         }
     }
 }

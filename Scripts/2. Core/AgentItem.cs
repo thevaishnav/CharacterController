@@ -150,7 +150,11 @@ namespace CCN.Core
         /// <summary> Use this item if its equipped. </summary>
         public bool TryStopUse()
         {
-            if (Agent.StopItemUse(this) == false) return false;
+            if (Agent.StopItemUse(this) == false)
+            {
+                Debug.Log($"Failed to stop item use: {name}");
+                return false;
+            }
 
             IsUsing = false;
             StopUse();
