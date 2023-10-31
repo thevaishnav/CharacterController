@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CCN.InputSystemWrapper
+namespace CCN.Utils
 {
     [DefaultExecutionOrder(-100)]
     public class HideInWindows : MonoBehaviour
