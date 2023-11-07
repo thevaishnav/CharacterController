@@ -78,7 +78,7 @@ namespace CCN.Health
         /// <summary> Reload this gun </summary>
         public virtual void Reload()
         {
-            GunCalculations.Reload(ref currentAmmo, ref currentMagCount, specs.magazineSize, specs.reloadType);
+            GunMath.Reload(ref currentAmmo, ref currentMagCount, specs.magazineSize, specs.reloadType, false);
             StartCoroutine(Utilitiees.TempSetManagedIntOne(Agent, reloadAnimationManagedInt1Value, specs.reloadDuration));
         }
 

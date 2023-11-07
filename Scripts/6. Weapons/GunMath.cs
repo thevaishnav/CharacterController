@@ -2,7 +2,7 @@
 
 namespace CCN.Health
 {
-    public static class GunCalculations
+    public static class GunMath
     {
         /// <summary> Convert magCount to ammo count. </summary>
         public static int MagCountToAmmo(float magCount, int magSize) => (int)(magCount * magSize);
@@ -11,9 +11,9 @@ namespace CCN.Health
         public static float AmmoToMagCount(int ammo, int magSize) => ammo / (float)magSize;
 
         /// <returns> Total available ammo in all the mags </returns>
-        public static int TotalAvailableAmmo(int ammoInCurrentMag, float availableMags, int magSize) => (int)(ammoInCurrentMag + availableMags * magSize);
-        
-        /// <summary> Remove ammo from mag </summary>
+        public static int TotalAvailableAmmo(int ammoInCurrentMag, float availableMags, int magSize) => Mathf.RoundToInt(ammoInCurrentMag + availableMags * magSize);
+
+        /// <summary> Remove number of bullets from a mag </summary>
         /// <param name="magCount"> Current mag count </param>
         /// <param name="magSize"> Capacity of one mag </param>
         /// <param name="ammoToReduce"> How much ammo to reduce </param>
@@ -25,15 +25,17 @@ namespace CCN.Health
         /// <param name="currentMagCount"> Number of mags available for gun. Function will update this to new count. </param>
         /// <param name="magSize"> Capacity of one mag </param>
         /// <param name="reloadType"> Type of reload to perform </param>
-        public static void Reload(ref int currentAmmo, ref float currentMagCount, int magSize, GunReloadType reloadType)
+        /// <param name="allowReloadIfMagIsFull"> Should the gun reload even if current magazine is fully loaded </param>
+        public static bool Reload(ref int currentAmmo, ref float currentMagCount, int magSize, GunReloadType reloadType, bool allowReloadIfMagIsFull)
         {
-            float tollarance = 1f / magSize;
-            if (currentMagCount < tollarance) return;
+            if (allowReloadIfMagIsFull == false && currentAmmo == magSize) return false;
+
+            float tolerance = 1f / magSize;
+            if (currentMagCount < tolerance) return false;
 
             switch (reloadType)
             {
                 case GunReloadType.FullReload:
-                    // if gun doesn't have 1 full magazine
                     if (currentMagCount >= 1f)
                     {
                         currentAmmo = magSize;
@@ -44,10 +46,11 @@ namespace CCN.Health
                         currentAmmo = MagCountToAmmo(currentMagCount, magSize); // Number of ammo left in mag 
                         currentMagCount = 0f;
                     }
-                    break;
+
+                    return true;
                 case GunReloadType.SemiReload:
-                    // how many magazines we need to completely fill current magazine
-                    float magNeeded = AmmoToMagCount(magSize - currentAmmo, magSize); 
+                    // how many magazines equivalent ammo we need to completely fill current magazine
+                    float magNeeded = AmmoToMagCount(magSize - currentAmmo, magSize);
 
                     if (magNeeded <= currentMagCount)
                     {
@@ -59,10 +62,11 @@ namespace CCN.Health
                         currentAmmo = MagCountToAmmo(currentMagCount, magSize);
                         currentMagCount = 0f;
                     }
-                    break;
+
+                    return true;
                 default:
                     Debug.LogError($"Unknown ReloadType: {reloadType}");
-                    break;
+                    return false;
             }
         }
 
@@ -70,28 +74,33 @@ namespace CCN.Health
         /// <param name="currentAmmo"> Ammo count in current mag before reloading. Function will update this to new count. </param>
         /// <param name="currentMagCount"> Number of mags available for gun. Function will update this to new count. </param>
         /// <param name="magSize"> Capacity of one mag </param>
-        /// <param name="reloadIfHasZeroAmmo"> Should the gun be reloaded if current ammo is 0 (before shooting) </param>
-        /// <param name="reloadIfReachesZeroAmmo"> Should the gun be reloaded if current ammo is 0 (after shooting) </param>
-        /// <returns> Was the shot successful </returns>
-        public static bool Shoot(ref int currentAmmo, ref float currentMagCount, int magSize, bool reloadIfHasZeroAmmo, bool reloadIfReachesZeroAmmo)
+        /// <param name="allowReloadBeforeShot"> Should the gun be reloaded if current ammo is 0 (before shooting) </param>
+        /// <param name="allowReloadAfterShot"> Should the gun be reloaded if current ammo is 0 (after shooting) </param>
+        public static ShootStatus Shoot(ref int currentAmmo, ref float currentMagCount, int magSize, bool allowReloadBeforeShot, bool allowReloadAfterShot)
         {
+            Debug.Log($"Shooting(currentAmmo: {currentAmmo}, currentMagCount: {currentMagCount}, magSize: {magSize}, allowReloadBeforeShot: {allowReloadBeforeShot}, allowReloadAfterShot: {allowReloadAfterShot})");
+            float tolerance = 1f / magSize;
             if (currentAmmo == 0)
             {
-                if (reloadIfHasZeroAmmo == false) return false;
-                
-                Reload(ref currentAmmo, ref currentMagCount, magSize, GunReloadType.FullReload);        // Reload type shouldn't matter if current ammo is zero
-                
-                // possible if user had zero magazines and zero ammo
-                if (currentAmmo == 0) return false;
+                if (currentMagCount < tolerance) return ShootStatus.NotShotOutOfAmmo;
+                if (allowReloadBeforeShot == false) return ShootStatus.NotShotNeedReload;
+
+                // Reload & Shoot
+                currentAmmo = magSize - 1;
+                currentMagCount--;
+                return ShootStatus.ReloadedAndShot;
             }
 
             currentAmmo--;
 
-            if (reloadIfReachesZeroAmmo && currentAmmo == 0)
+            if (allowReloadAfterShot && currentAmmo == 0)
             {
-                Reload(ref currentAmmo, ref currentMagCount, magSize, GunReloadType.FullReload);        // Reload type shouldn't matter if current ammo is zero
+                // Reload type shouldn't matter if current ammo is zero
+                Reload(ref currentAmmo, ref currentMagCount, magSize, GunReloadType.FullReload, false);
+                return ShootStatus.ShotAndReloaded;
             }
-            return true;
+
+            return ShootStatus.Shot;
         }
     }
 }

@@ -65,6 +65,7 @@ namespace CCN.InputSystemWrapper
             }
         }
 
+        #pragma warning disable CS0162
         public Vector2 GetAxisValue()
         {
             #if UNITY_EDITOR || UNITY_STANDALONE
@@ -74,6 +75,7 @@ namespace CCN.InputSystemWrapper
             #endif
             return _hasButton ? button.AxisValue : Vector2.zero;
         }
+        #pragma warning restore CS0162
 
         public void SetButton(InteractionTrigger newButton)
         {

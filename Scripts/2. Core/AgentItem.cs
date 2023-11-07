@@ -29,36 +29,32 @@ namespace CCN.Core
     /// </summary>
     public abstract class AgentItem : MonoBehaviour, IInteractionProfileTarget
     {
+        #region ToolTips
+        private const string TT_ID = "Unique identifier to identify this item in Animator component. \n \"Equipped Item ID\" will be set to +id while equipping this item, and -id while unequipping this item. \n \"Using Item ID\" will be set to +id while equipping this item";
+        private const string TT_SLOT = "Which body part of agent should hold this item. This has nothing to do with object actual position related to agent. One body part can only hold one item at a time.";
+        private const string TT_EQUIPMENT_PROFILE = "Profile to equip/unequip this behaviour.";
+        private const string TT_USE_PROFILE = "Profile to equip/unequip this behaviour.";
+        private const string TT_ACTIVATE_WITH_ITEM = "Can be null. GameObject that will be active only when this item is equipped.";
+        private const string TT_MOVE_SPEED_MULTIPLIER = "Multiply movement speed of the agent when this item is equipped.";
+        private const string TT_EQUIP_ANIMATION_DURATION = "Duration of equip animation";
+        private const string TT_UNEQUIP_ANIMATION_DURATION = "Duration of unequip animation";
+        private const string TT_AUTO_USE_WHEN_EQUIPPED = "Should this item be used as soon as its equipped?";
+        #endregion
+
         #region Fields & Properties
+        // @formatter:off
         [Header("Item Info")]
-        [SerializeField, Tooltip("Unique identifier to identify this item in Animator component. \n \"Equipped Item ID\" will be set to +id while equipping this item, and -id while unequipping this item. \n \"Using Item ID\" will be set to +id while equipping this item")]
-        protected int id;
-
-        [SerializeField, Tooltip("Which body part of agent should hold this item. This has nothing to do with object actual position related to agent. One body part can only hold one item at a time.")]
-        protected ItemSlot slot;
-
-        [SerializeField, Tooltip("Profile to equip/unequip this behaviour.")]
-        protected InteractionProfileBase equipmentProfile;
-
-        [SerializeField, Tooltip("Profile to equip/unequip this behaviour.")]
-        protected InteractionProfileBase useProfile;
-
-        [SerializeField, Tooltip("Can be null. GameObject that will be active only when this item is equipped.")]
-        protected GameObject activateWithItem;
-
+        [SerializeField, Tooltip(TT_ID)]                         protected int id;
+        [SerializeField, Tooltip(TT_SLOT)]                       protected ItemSlot slot;
+        [SerializeField, Tooltip(TT_EQUIPMENT_PROFILE)]          protected InteractionProfileBase equipmentProfile;
+        [SerializeField, Tooltip(TT_USE_PROFILE)]                protected InteractionProfileBase useProfile;
+        [SerializeField, Tooltip(TT_ACTIVATE_WITH_ITEM)]         protected GameObject activateWithItem;
+        [SerializeField, Tooltip(TT_MOVE_SPEED_MULTIPLIER)]      protected float moveSpeedMultiplier = 1f;
+        [SerializeField, Tooltip(TT_EQUIP_ANIMATION_DURATION)]   protected float equipAnimationDuration = 0f;
+        [SerializeField, Tooltip(TT_UNEQUIP_ANIMATION_DURATION)] protected float unequipAnimationDuration = 0f;
+        [SerializeField, Tooltip(TT_AUTO_USE_WHEN_EQUIPPED)]     protected bool autoUseWhenEquipped;
+        // @formatter:off
         
-        [SerializeField, Tooltip("Multiply movement speed of the agent when this item is equipped.")]
-        protected float moveSpeedMultiplier = 1f;
-
-        [SerializeField, Tooltip("Duration of equip animation")] 
-        protected float equipAnimationDuration = 0f;
-
-        [SerializeField, Tooltip("Duration of unequip animation")] 
-        protected float unequipAnimationDuration = 0f;
-
-        [SerializeField, Tooltip("Should this item be used as soon as its equipped?")]
-        protected bool autoUseWhenEquipped;
-
         /// <summary> Agent that is controlling this behaviour </summary>
         public Agent Agent { get; private set; }
 
