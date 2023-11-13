@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 // ReSharper disable InconsistentNaming
 
-namespace CCN.Core
+namespace Omnix.CCN.Core
 {
     /// <summary> Handles animation controllers </summary>
     internal class AnimatorHandler

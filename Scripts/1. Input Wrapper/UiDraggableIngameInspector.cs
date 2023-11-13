@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CCN.InputSystemWrapper
+namespace Omnix.CCN.InputSystemWrapper
 {
     public class UiDraggableIngameInspector : MonoBehaviour
     {

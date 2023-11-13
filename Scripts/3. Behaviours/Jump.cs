@@ -1,12 +1,12 @@
 using System;
-using CCN.Core;
 using UnityEngine;
-using CCN.InputSystemWrapper;
+using Omnix.CCN.Core;
+using Omnix.CCN.InputSystemWrapper;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace CCN.Behaviours
+namespace Omnix.CCN.Behaviours
 {
     /// <summary> Jump behaviour for the Agent </summary>
     [Serializable]

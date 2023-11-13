@@ -1,4 +1,4 @@
-namespace CCN.Health
+namespace Omnix.CCN.Health
 {
     public interface IDamageDealer
     {

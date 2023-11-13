@@ -1,20 +1,20 @@
-using CCN.Collections;
 using MenuManagement.Base;
+using Omnix.CCN.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace CCN.Health
+namespace Omnix.CCN.Health
 {
     [GroupEvents("onDamage", "onHeal", "onDeath", "onSpawnOrRespawn")]
-    [GroupProperties("Sound", "", "audioSource", "playOnDamage", "playOnHeal", "playOnDeath")]
-    [GroupProperties("Connected Objects", "", "activateWhenInvincible", "spawnOnDeath", "destroyOnDeath")]
-    [GroupProperties("Setup", "", "health", "timeInvincibleAfterSpawn", "autoRespawnDelay", "_RigidBody", "hitBoxes", "shields")]
+    [GroupProperties("Sound", "audioSource", "playOnDamage", "playOnHeal", "playOnDeath")]
+    [GroupProperties("Connected Objects", "activateWhenInvincible", "spawnOnDeath", "destroyOnDeath")]
+    [GroupProperties("Setup", "health", "timeInvincibleAfterSpawn", "autoRespawnDelay", "_RigidBody", "hitBoxes", "shields")]
     public class DamageReceiver : MonoBehaviour
     {
         #region Fields & Properties
         [SerializeField, Tooltip("How much damage this object has")]
         protected float health = 100f;
-        
+
         [SerializeField, Tooltip("Duration for which the object will be invincible after spawn")]
         private float timeInvincibleAfterSpawn = 0f;
 
@@ -29,8 +29,7 @@ namespace CCN.Health
         [Tooltip("Colliders that take damage (You can have different parts of object receive damage differently.")]
         public HitBoxCollection hitBoxes;
 
-        [Tooltip("Visuals for the invisible")]
-        public GameObject activateWhenInvincible;
+        [Tooltip("Visuals for the invisible")] public GameObject activateWhenInvincible;
 
         [Tooltip("Objects to spawn when the object dies")]
         public GameObjectCollection spawnOnDeath;
@@ -64,7 +63,7 @@ namespace CCN.Health
         private UnityEvent<bool> onSpawnOrRespawn;
 
         private bool _isInvincible = false;
-        
+
         protected float startValue;
 
         public float LastSpawnTime { get; protected set; }
@@ -136,12 +135,12 @@ namespace CCN.Health
             onSpawnOrRespawn?.Invoke(false);
         }
 
-        
+
         public void AddShield(float life, float absorptionRate, bool restoreOnRespawn = true)
         {
             AddShield(new Shield(life, absorptionRate, restoreOnRespawn));
         }
-        
+
         public void AddShield(Shield shield)
         {
             shield.Init();

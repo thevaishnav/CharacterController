@@ -1,8 +1,9 @@
 using System;
-using CCN.Core;
+using System.Text;
+using Omnix.CCN.Core;
 using UnityEngine;
 
-namespace CCN.InputSystemWrapper
+namespace Omnix.CCN.InputSystemWrapper
 {
     public abstract class InteractionProfileBase : ScriptableObject
     {
@@ -47,12 +48,9 @@ namespace CCN.InputSystemWrapper
         [NonSerialized] protected Func<bool> shouldStopCheck;
         [NonSerialized] protected Func<bool> shouldStartCheck;
 
-        // protected bool fetchAxisValueFromTrigger;
-
-
         protected abstract void OnUiAxis(Vector2 value);
-        protected abstract void UninteractTarget();
-        protected abstract void InteractTarget();
+        protected abstract void UninteractAllTargets();
+        protected abstract void InteractAllTargets();
         protected abstract void ToggleInteractAllTargets();
 
 
@@ -65,7 +63,7 @@ namespace CCN.InputSystemWrapper
             }
         }
 
-        #pragma warning disable CS0162
+#pragma warning disable CS0162
         public Vector2 GetAxisValue()
         {
             #if UNITY_EDITOR || UNITY_STANDALONE
@@ -75,12 +73,12 @@ namespace CCN.InputSystemWrapper
             #endif
             return _hasButton ? button.AxisValue : Vector2.zero;
         }
-        #pragma warning restore CS0162
+#pragma warning restore CS0162
 
         public void SetButton(InteractionTrigger newButton)
         {
             if (newButton == null) return;
-            
+
             _hasButton = true;
             button = newButton;
             switch (uiMode)
@@ -89,29 +87,26 @@ namespace CCN.InputSystemWrapper
                     button.PointerDownCallback = ToggleInteractAllTargets;
                     break;
                 case UiInteractionMode.ActiveWhilePressed:
-                    button.PointerDownCallback = InteractTarget;
-                    button.PointerUpCallback = UninteractTarget;
+                    button.PointerDownCallback = InteractAllTargets;
+                    button.PointerUpCallback = UninteractAllTargets;
                     break;
                 case UiInteractionMode.Drag:
                     button.DragCallback = OnUiAxis;
-                    button.PointerUpCallback = UninteractTarget;
+                    button.PointerUpCallback = UninteractAllTargets;
                     break;
             }
         }
 
-        public virtual void DoTarget(IInteractionProfileTarget target, Agent agent)
+        public virtual void DoTarget(IInteraction target, Agent agent)
         {
-            if (_hasInitialized == false)
-            {
-                Init();
-                _hasInitialized = true;
-            }
+            Init();
 
-            if (tryStartInAwake) target.StartInteraction(this);
+            if (tryStartInAwake) target.StartInteraction();
         }
 
         protected virtual void Init()
         {
+            if (_hasInitialized) return;
             switch (pcMode, pcInputType)
             {
                 case (PcInteractionMode.PressToToggle, PcInputMode.GetKey):
@@ -144,19 +139,26 @@ namespace CCN.InputSystemWrapper
                     shouldStopCheck = () => false;
                     break;
                 }
-                    ;
             }
+
+            _hasInitialized = true;
         }
 
-        protected void CheckInteractionFor(IInteractionProfileTarget target)
+        protected void CheckInteractionFor(IInteraction target)
         {
-            if (target.IsInteracting(this))
+            if (target.IsInteracting())
             {
-                if (shouldStopCheck()) target.EndInteraction(this);
+                if (shouldStopCheck())
+                {
+                    target.EndInteraction();
+                }
             }
             else
             {
-                if (shouldStartCheck()) target.StartInteraction(this);
+                if (shouldStartCheck())
+                {
+                    target.StartInteraction();
+                }
             }
         }
     }

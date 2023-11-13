@@ -1,14 +1,11 @@
-using System;
-using System.Reflection;
-using CCN.Health;
+using Omnix.CCN.Items;
 using Omnix.Editor;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
-namespace CCN.EditorSpace
+namespace Omnix.CCN.EditorSpace
 {
-    [CustomPropertyDrawer(typeof(AmmoHolder))]
+    [CustomPropertyDrawer(typeof(AmmoInfo))]
     public class PD_AmmoHolder : PropertyDrawer
     {
         private static GUIContent CONTENT_ALLOW = new GUIContent("Allow Reload");

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using CCN.InputSystemWrapper;
 using JetBrains.Annotations;
+using Omnix.CCN.InputSystemWrapper;
 using UnityEngine;
 
-namespace CCN.Core
+namespace Omnix.CCN.Core
 {
     [RequireComponent(typeof(CharacterController))]
     [DefaultExecutionOrder(-100)]
@@ -180,7 +180,17 @@ namespace CCN.Core
             _velocity = Vector3.zero;
             _animatorHandler = new AnimatorHandler(animator);
             _equippedItems = new Dictionary<ItemSlot, AgentItem>();
+        }
 
+        private void Start()
+        {
+            _buildInController = GetComponent<CharacterController>();
+            if (hideCursor)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+            
             foreach (AgentBehaviour behaviour in behaviors)
             {
                 behaviour.Init(this);
@@ -192,16 +202,6 @@ namespace CCN.Core
             }
             
             UpdateMovementSpeed();
-        }
-
-        private void Start()
-        {
-            _buildInController = GetComponent<CharacterController>();
-            if (hideCursor)
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-            }
         }
 
         private void FixedUpdate()

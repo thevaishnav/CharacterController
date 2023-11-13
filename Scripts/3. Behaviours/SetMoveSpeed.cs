@@ -1,11 +1,11 @@
 using System;
-using CCN.Core;
-using CCN.InputSystemWrapper;
+using Omnix.CCN.Core;
+using Omnix.CCN.InputSystemWrapper;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace CCN.Behaviours
+namespace Omnix.CCN.Behaviours
 {
     /// <summary> Run or Walk slowly behaviour for the agent </summary>
     [Serializable]

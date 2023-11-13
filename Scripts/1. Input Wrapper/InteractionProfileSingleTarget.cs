@@ -1,13 +1,13 @@
 using System;
-using CCN.Core;
+using Omnix.CCN.Core;
 using UnityEngine;
 
-namespace CCN.InputSystemWrapper
+namespace Omnix.CCN.InputSystemWrapper
 {
     [CreateAssetMenu(menuName = "CCN/Interaction Profile  (Single Target)", fileName = "New Interaction Profile")]
     public class InteractionProfileSingleTarget : InteractionProfileBase
     {
-        [NonSerialized] private IInteractionProfileTarget _target;
+        [NonSerialized] private IInteraction _target;
         [NonSerialized] private Agent _targetAgent;
 
         private void CheckInteract()
@@ -15,7 +15,7 @@ namespace CCN.InputSystemWrapper
             CheckInteractionFor(_target);
         }
 
-        public override void DoTarget(IInteractionProfileTarget target, Agent agent)
+        public override void DoTarget(IInteraction target, Agent agent)
         {
             base.DoTarget(target, agent);
             
@@ -38,20 +38,20 @@ namespace CCN.InputSystemWrapper
         protected override void ToggleInteractAllTargets()
         {
             if (_target == null) return;
-            if (_target.IsInteracting(this)) _target.EndInteraction(this);
-            else _target.StartInteraction(this);
+            if (_target.IsInteracting()) _target.EndInteraction();
+            else _target.StartInteraction();
         }
 
-        protected override void InteractTarget()
+        protected override void InteractAllTargets()
         {
             if (_target == null) return;
-            _target.StartInteraction(this);
+            _target.StartInteraction();
         }
 
-        protected override void UninteractTarget()
+        protected override void UninteractAllTargets()
         {
             if (_target == null) return;
-            _target.EndInteraction(this);
+            _target.EndInteraction();
         }
 
         protected override void OnUiAxis(Vector2 value)
@@ -60,16 +60,16 @@ namespace CCN.InputSystemWrapper
             bool aboveThreshold = value.sqrMagnitude > uiAxisThreshold;
             if (aboveThreshold)
             {
-                if (_target.IsInteracting(this) == false)
+                if (_target.IsInteracting() == false)
                 {
-                    _target.StartInteraction(this);
+                    _target.StartInteraction();
                 }
             }
             else
             {
-                if (_target.IsInteracting(this) == true)
+                if (_target.IsInteracting() == true)
                 {
-                    _target.EndInteraction(this);
+                    _target.EndInteraction();
                 }
             }
         }

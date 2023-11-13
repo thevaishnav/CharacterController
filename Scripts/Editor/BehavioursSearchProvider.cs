@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using CCN.Core;
+using Omnix.CCN.Core;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
-namespace CCN.EditorSpace
+namespace Omnix.CCN.EditorSpace
 {
     public class BehavioursSearchProvider : ScriptableObject, ISearchWindowProvider
     {

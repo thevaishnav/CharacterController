@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5a7c7b6f819041ddb7f6dad6ee9f768a, type: 3}
-  m_Name: IP Gun
+  m_Name: IP
   m_EditorClassIdentifier: 
   tryStartInAwake: 0
-  pcMode: 2
-  pcInputType: 1
-  pcTriggerName: Fire1
+  pcMode: 1
+  pcInputType: 0
+  pcTriggerName: 
   pcTriggerName2: 
   pcAxisThreshold: 0
-  pcKeycode: 0
-  uiMode: 1
+  pcKeycode: 120
+  uiMode: 0
   uiAxisIntensity: {x: 0, y: 0}
   uiAxisThreshold: 0

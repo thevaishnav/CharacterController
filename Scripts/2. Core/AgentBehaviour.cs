@@ -1,16 +1,16 @@
 using System;
-using CCN.InputSystemWrapper;
+using Omnix.CCN.InputSystemWrapper;
 using UnityEngine;
 
 
-namespace CCN.Core
+namespace Omnix.CCN.Core
 {
     /// <summary>
     /// Base Class for all the agent behaviours.
     /// An behaviour is a state which (when active) controls the behaviour of the agent.
     /// </summary>
     [Serializable]
-    public abstract class AgentBehaviour : IInteractionProfileTarget
+    public abstract class AgentBehaviour
     {
         #region Field and Properties
         #if UNITY_EDITOR
@@ -46,14 +46,9 @@ namespace CCN.Core
         {
             Agent = agent;
             IsEnabled = false;
-            
-            if (interactionProfile != null)
-            {
-                interactionProfile.DoTarget(this, agent);
-            }
-            
             Agent.EvEnabled += OnAgentEnabled;
             Agent.EvDisabled += OnAgentDisabled;
+            SetupInteractions(agent);
         }
 
         /// <summary> Sets value of <see cref="IsEnabled"/> variable and calls relevant callbacks.</summary>
@@ -119,30 +114,16 @@ namespace CCN.Core
         protected virtual void OnBehaviourDisabled()
         {
         }
-        #endregion
 
-        #region Interaction Profile
-        /// <summary> In-case if the child class has its own interaction profile </summary>
-        /// <returns> true if this item is interacting with respect to given profile </returns>
-        protected virtual bool IsInteractingWithProfile(InteractionProfileBase profile) => IsEnabled;
-        
-        /// <summary> In-case if the child class has its own interaction profile </summary>
-        /// <returns>
-        /// true if the profile belongs to parent class interaction.
-        /// So if parent class method returns true, child classes can simply exit out of function.
-        /// </returns>
-        protected virtual bool StartInteractionWithProfile(InteractionProfileBase profile) => TryEnable();
-        
-        /// <summary> In-case if the child class has its own interaction profile </summary>
-        /// <returns>
-        /// true if the profile belongs to parent class interaction.
-        /// So if parent class method returns true, child classes can simply exit out of function.
-        /// </returns>
-        protected virtual bool EndInteractionWithProfile(InteractionProfileBase profile) => TryDisable();
-        
-        bool IInteractionProfileTarget.IsInteracting(InteractionProfileBase profile) => IsInteractingWithProfile(profile);
-        void IInteractionProfileTarget.StartInteraction(InteractionProfileBase profile) => StartInteractionWithProfile(profile);
-        void IInteractionProfileTarget.EndInteraction(InteractionProfileBase profile) => EndInteractionWithProfile(profile);
+        protected virtual void SetupInteractions(Agent agent)
+        {
+            if (interactionProfile != null)
+            {
+                var ipt = new IPT_FuncBool(() => IsEnabled, TryEnable, TryDisable);
+                interactionProfile.DoTarget(ipt, agent);
+            }
+
+        }
         #endregion
     }
 }

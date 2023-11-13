@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEditor;
 #endif
 
-namespace CCN.InputSystemWrapper
+namespace Omnix.CCN.InputSystemWrapper
 {
     public abstract class UiInputBase : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     {
@@ -154,7 +154,7 @@ namespace CCN.InputSystemWrapper
 
     #if UNITY_EDITOR
     [CustomEditor(typeof(UiInputBase), true)]
-    public class UiDraggableBaseEditor : Editor
+    public class UiDraggableBaseEditor : UnityEditor.Editor
     {
         private SerializedProperty _sensitivityMultiplier;
         private SerializedProperty _overflowBehaviour;

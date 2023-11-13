@@ -1,9 +1,10 @@
-using CCN.Health;
+using Omnix.CCN.Health;
+using Omnix.CCN.Items;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CCN.Demos
+namespace Omnix.CCN.Demos
 {
     public class GunMathDemoController : MonoBehaviour
     {

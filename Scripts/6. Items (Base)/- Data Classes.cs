@@ -1,9 +1,28 @@
 ﻿using System;
+using Omnix.CCN.Health;
 
-namespace CCN.Health
+namespace Omnix.CCN.Items
 {
-    [Serializable]
-    public class AmmoHolder
+    public enum ShootStatus
+    {
+        /// <summary> Shot successfully without reloading </summary>
+        Shot = 0,
+
+        /// <summary> Reloaded and then Shot successfully </summary>
+        ReloadedAndShot = 1,
+
+        /// <summary> Shot successfully and then reloaded </summary>
+        ShotAndReloaded = 2,
+
+        /// <summary> Not shot because needs to reload (And can be reloaded) </summary>
+        NotShotNeedReload = 3,
+
+        /// <summary> Not shot because the gun needs to reload (But doesn't have enough ammo to reload) </summary>
+        NotShotOutOfAmmo = 4,
+    }
+    
+     [Serializable]
+    public class AmmoInfo
     {
         public int MagSize;
         public float CurrentMagCount;
@@ -13,7 +32,7 @@ namespace CCN.Health
         public bool AllowReloadIfMagIsFull;
         public GunReloadType ReloadType;
         
-        public AmmoHolder(int magSize, float currentMagCount, int currentAmmo, GunReloadType reloadType, bool allowReloadBeforeShot = false, bool allowReloadAfterShot = true, bool allowReloadIfMagIsFull = false)
+        public AmmoInfo(int magSize, float currentMagCount, int currentAmmo, GunReloadType reloadType, bool allowReloadBeforeShot = false, bool allowReloadAfterShot = true, bool allowReloadIfMagIsFull = false)
         {
             ReloadType = reloadType;
             MagSize = magSize;

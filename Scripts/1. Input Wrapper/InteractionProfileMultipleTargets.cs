@@ -1,22 +1,22 @@
 using System;
 using System.Collections.Generic;
-using CCN.Core;
+using Omnix.CCN.Core;
 using UnityEngine;
 
-namespace CCN.InputSystemWrapper
+namespace Omnix.CCN.InputSystemWrapper
 {
     [CreateAssetMenu(menuName = "CCN/Interaction Profile (Multiple Targets)", fileName = "New Interaction Profile")]
     public class InteractionProfileMultipleTargets : InteractionProfileBase
     {
-        [NonSerialized] private List<IInteractionProfileTarget> _targets;
+        [NonSerialized] private List<IInteraction> _targets;
 
         protected override void Init()
         {
             base.Init();
-            _targets = new List<IInteractionProfileTarget>();
+            _targets = new List<IInteraction>();
         }
         
-        public override void DoTarget(IInteractionProfileTarget target, Agent agent)
+        public override void DoTarget(IInteraction target, Agent agent)
         {
             base.DoTarget(target, agent);
 
@@ -31,30 +31,30 @@ namespace CCN.InputSystemWrapper
         {
             if (_targets == null || _targets.Count == 0) return;
 
-            foreach (IInteractionProfileTarget target in _targets)
+            foreach (IInteraction target in _targets)
             {
-                if (target.IsInteracting(this)) target.EndInteraction(this);
-                else target.StartInteraction(this);
+                if (target.IsInteracting()) target.EndInteraction();
+                else target.StartInteraction();
             }
         }
 
-        protected override void InteractTarget()
+        protected override void InteractAllTargets()
         {
             if (_targets == null || _targets.Count == 0) return;
 
-            foreach (IInteractionProfileTarget target in _targets)
+            foreach (IInteraction target in _targets)
             {
-                target.StartInteraction(this);
+                target.StartInteraction();
             }
         }
 
-        protected override void UninteractTarget()
+        protected override void UninteractAllTargets()
         {
             if (_targets == null || _targets.Count == 0) return;
 
-            foreach (IInteractionProfileTarget target in _targets)
+            foreach (IInteraction target in _targets)
             {
-                target.EndInteraction(this);
+                target.EndInteraction();
             }
         }
 
@@ -64,20 +64,20 @@ namespace CCN.InputSystemWrapper
 
             bool aboveThreshold = value.sqrMagnitude > uiAxisThreshold;
 
-            foreach (IInteractionProfileTarget target in _targets)
+            foreach (IInteraction target in _targets)
             {
                 if (aboveThreshold)
                 {
-                    if (target.IsInteracting(this) == false)
+                    if (target.IsInteracting() == false)
                     {
-                        target.StartInteraction(this);
+                        target.StartInteraction();
                     }
                 }
                 else
                 {
-                    if (target.IsInteracting(this) == true)
+                    if (target.IsInteracting() == true)
                     {
-                        target.EndInteraction(this);
+                        target.EndInteraction();
                     }
                 }
             }

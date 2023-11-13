@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using Omnix.CCN.Health;
+using UnityEngine;
 
-namespace CCN.Health
+namespace Omnix.CCN.Items
 {
     public static class GunMath
     {

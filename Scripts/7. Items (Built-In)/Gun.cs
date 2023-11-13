@@ -1,14 +1,14 @@
-using System;
-using System.Collections;
-using CCN.Core;
-using CCN.InputSystemWrapper;
-using CCN.Utils;
+using Omnix.CCN.Core;
+using Omnix.CCN.InputSystemWrapper;
+using Omnix.CCN.Items;
+using Omnix.CCN.Utils;
 using UnityEngine;
 #if UNITY_EDITOR
+using Omnix.Utils;
 using UnityEditor;
 #endif
 
-namespace CCN.Health
+namespace Omnix.CCN.Health
 {
     public enum GunReloadType
     {
@@ -25,7 +25,7 @@ namespace CCN.Health
 
 
     // TODO: Incomplete implementation
-    public class BasicGun : AgentItem, IDamageDealer
+    public class Gun : AgentItem, IDamageDealer
     {
         [Header("References")] [SerializeField, Tooltip("Spawn location and move direction for the bullet")]
         protected Transform nozzle;
@@ -65,14 +65,18 @@ namespace CCN.Health
             Vector3 pos = nozzle.position;
             Vector3 direction = nozzle.forward;
 
-            GizmosExtension.DrawArrow(pos, direction);
+            GizmosUtils.DrawArrow(pos, direction);
             #endif
         }
 
         public override void Init(Agent agent)
         {
             base.Init(agent);
-            if (reloadProfile) reloadProfile.DoTarget(this, agent);
+            if (reloadProfile)
+            {
+                var ipt = new IPT_Action(() => IsReloading, Reload, () => { });
+                reloadProfile.DoTarget(ipt, agent);
+            }
         }
         
         /// <summary> Reload this gun </summary>
@@ -107,25 +111,6 @@ namespace CCN.Health
 
         protected override void StopUse()
         {
-        }
-
-        protected override bool IsInteractingWithProfile(InteractionProfileBase profile)
-        {
-            if (base.IsInteractingWithProfile(profile)) return true;
-            if (profile == reloadProfile) return IsReloading;
-            return false;
-        }
-
-        protected override bool StartInteractionWithProfile(InteractionProfileBase profile)
-        {
-            if (base.StartInteractionWithProfile(profile)) return true;
-            if (profile == reloadProfile)
-            {
-                Reload();
-                return true;
-            }
-
-            return false;
         }
     }
 }

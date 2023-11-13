@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CCN.Utils
+namespace Omnix.CCN.Utils
 {
     /// <summary> A Unity component for creating a procedural cross. </summary>
     public class ProceduralCross : MonoBehaviour

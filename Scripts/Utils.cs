@@ -1,9 +1,9 @@
 using System;
 using System.Collections;
-using CCN.Core;
+using Omnix.CCN.Core;
 using UnityEngine;
 
-namespace CCN.Utils
+namespace Omnix.CCN.Utils
 {
     public static class Utilitiees
     {

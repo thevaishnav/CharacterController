@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CCN.Health
+namespace Omnix.CCN.Health
 {
     public class DamageMarks : ScriptableObject
     {

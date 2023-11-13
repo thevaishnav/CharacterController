@@ -1,11 +1,11 @@
-using CCN.InputSystemWrapper;
+using Omnix.CCN.InputSystemWrapper;
 using UnityEditor;
 using UnityEngine;
 
-namespace CCN.EditorSpace
+namespace Omnix.CCN.EditorSpace
 {
     [CustomEditor(typeof(InteractionProfileBase), true)]
-    public class Ed_InteractionProfile : Editor
+    public class Ed_InteractionProfile : UnityEditor.Editor
     {
         private static readonly GUIContent SingleTargetInfo = new GUIContent("This type of profile will only be able to command one target at a time.\n This takes less processing power than Multi Target Profile.\n The target can be an ability, item or agent.");
         private static readonly GUIContent MultiTargetInfo = new GUIContent("This type of profile can command one or more target at a time.\n This takes more processing power than Single Target Profile.\n The target can an ability, item or agent.");

@@ -1,14 +1,14 @@
 using System;
 using System.Reflection;
-using CCN.Core;
+using Omnix.CCN.Core;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
-namespace CCN.EditorSpace
+namespace Omnix.CCN.EditorSpace
 {
     [CustomEditor(typeof(Agent))]
-    public class Ed_Agent : Editor
+    public class Ed_Agent : UnityEditor.Editor
     {
         private const BindingFlags BINDING_FLAGS = BindingFlags.Default | BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.InvokeMethod | BindingFlags.CreateInstance | BindingFlags.GetField | BindingFlags.SetField | BindingFlags.GetProperty | BindingFlags.SetProperty | BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty | BindingFlags.ExactBinding | BindingFlags.SuppressChangeType | BindingFlags.OptionalParamBinding | BindingFlags.IgnoreReturn;
 

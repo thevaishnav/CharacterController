@@ -1,12 +1,12 @@
 using System;
-using CCN.InputSystemWrapper;
 using UnityEngine;
 using Cinemachine;
+using Omnix.CCN.InputSystemWrapper;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 
-namespace CCN.Utils
+namespace Omnix.CCN.Utils
 {
     [RequireComponent(typeof(Image))]
     public class CinemachineCameraControlsForMobile : UiInputBase

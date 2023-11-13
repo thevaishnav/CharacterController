@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using CCN.Health;
+using Omnix.CCN.Health;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
@@ -8,7 +8,7 @@ using Random = UnityEngine.Random;
 using UnityEditor;
 #endif
 
-namespace CCN.Collections
+namespace Omnix.CCN.Collections
 {
 
     [Serializable]

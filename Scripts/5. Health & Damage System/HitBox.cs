@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace CCN.Health
+namespace Omnix.CCN.Health
 {
     [Serializable]
     public class HitBox

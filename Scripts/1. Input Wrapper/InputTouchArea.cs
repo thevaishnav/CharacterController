@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace CCN.InputSystemWrapper
+namespace Omnix.CCN.InputSystemWrapper
 {
     [RequireComponent(typeof(Image))]
     public class InputTouchArea : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
