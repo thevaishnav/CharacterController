@@ -27,14 +27,14 @@ namespace Omnix.CCN.EditorSpace
             position.x += 20f;
             position.width -= 30f;
             
-            var positioner = new PropPositioner(position, 1f);
+            var positioner = new OmnixLayout(position, 1f);
             
             property.isExpanded = EditorGUI.Foldout(positioner, property.isExpanded, label);
             if (property.isExpanded == false) return;
             DrawDirectControl(property, positioner);
         }
 
-        private void DrawDirectControl(SerializedProperty property, PropPositioner positioner)
+        private void DrawDirectControl(SerializedProperty property, OmnixLayout positioner)
         {
             EditorGUI.PropertyField(positioner, property.FindPropertyRelative("ReloadType"));
             EditorGUI.PropertyField(positioner, property.FindPropertyRelative("MagSize"));
